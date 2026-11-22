@@ -1,17 +1,27 @@
 from datetime import datetime
+
 from sqlalchemy import BigInteger, Boolean, DateTime, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
+
 from .schema import Base
+
 
 class ModCase(Base):
     __tablename__='mod_cases'
+    __table_args__=(UniqueConstraint('guild_id','case_id'),)
     id: Mapped[int]=mapped_column(Integer, primary_key=True, autoincrement=True)
+    case_id: Mapped[int]=mapped_column(Integer,index=True)
     guild_id: Mapped[int]=mapped_column(BigInteger,index=True)
     target_id: Mapped[int]=mapped_column(BigInteger,index=True)
     moderator_id: Mapped[int]=mapped_column(BigInteger,index=True)
     action: Mapped[str]=mapped_column(String(32),index=True)
     reason: Mapped[str]=mapped_column(Text,default='No reason provided')
     created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),server_default=func.now())
+
+class ModerationCounter(Base):
+    __tablename__='moderation_counters'
+    guild_id: Mapped[int]=mapped_column(BigInteger,primary_key=True)
+    next_case_id: Mapped[int]=mapped_column(Integer,nullable=False,default=1)
 
 class Reminder(Base):
     __tablename__='reminders'

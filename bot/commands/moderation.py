@@ -1,9 +1,11 @@
-import discord
 from datetime import timedelta
+
+import discord
 from discord import app_commands
 from discord.ext import commands
+
 from bot.services.audit import send_log
-from bot.ui import success_embed, error_embed, warning_embed, info_embed
+from bot.ui import error_embed, info_embed, success_embed, warning_embed
 
 
 class Moderation(commands.Cog):
@@ -92,6 +94,7 @@ class Moderation(commands.Cog):
         embed.add_field(name='Reason', value=reason[:1024], inline=False)
         await i.response.send_message(embed=embed)
         await send_log(i.guild, await self.bot.guild_config.get(i.guild_id), 'Member kicked', f'{member.mention} — {reason}')
+
 
     @app_commands.command(name='clear', description='Bulk delete recent messages')
     @app_commands.guild_only()

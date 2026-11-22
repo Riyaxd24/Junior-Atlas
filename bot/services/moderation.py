@@ -1,7 +1,11 @@
 from __future__ import annotations
-from datetime import datetime, timezone
-from sqlalchemy import select, func
+
+from datetime import UTC, datetime
+
+from sqlalchemy import func, select
+
 from bot.models import Warning
+
 
 class ModerationService:
     def __init__(self,db): self.db=db
@@ -11,9 +15,20 @@ class ModerationService:
     async def warnings(self,guild_id,user_id,include_expired=False):
         async with self.db.session() as s:
             q=select(Warning).where(Warning.guild_id==guild_id,Warning.user_id==user_id)
-            if not include_expired: q=q.where((Warning.expires_at.is_(None)) | (Warning.expires_at>datetime.now(timezone.utc)))
+            if not include_expired: q=q.where((Warning.expires_at.is_(None)) | (Warning.expires_at>datetime.now(UTC)))
             return list((await s.execute(q.order_by(Warning.id.desc()).limit(50))).scalars())
     async def count(self,guild_id,user_id):
         async with self.db.session() as s:
-            q=select(func.coalesce(func.sum(Warning.points),0)).where(Warning.guild_id==guild_id,Warning.user_id==user_id,(Warning.expires_at.is_(None)) | (Warning.expires_at>datetime.now(timezone.utc)))
+            q=select(func.coalesce(func.sum(Warning.points),0)).where(Warning.guild_id==guild_id,Warning.user_id==user_id,(Warning.expires_at.is_(None)) | (Warning.expires_at>datetime.now(UTC)))
             return int((await s.execute(q)).scalar_one())
+
+    async def clear_warnings(self, guild_id, user_id):
+        async with self.db.session() as s:
+            result = await s.execute(
+                Warning.__table__.delete().where(
+                    Warning.guild_id == guild_id,
+                    Warning.user_id == user_id,
+                )
+            )
+            await s.commit()
+            return result.rowcount

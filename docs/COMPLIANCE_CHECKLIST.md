@@ -29,7 +29,10 @@ Status: `[x]` implemented and verified, `[~]` partial, `[ ]` missing.
 
 ## M1-M11
 
-All Module A through K, M, N, and L work remains `[ ]` until implementation and testing.
+M1 moderation: `[~]` existing moderation surfaces plus race-safe per-guild case IDs; remaining
+M1 command and history hardening is in progress.
+
+All Module D through K, M, N, and L work remains `[ ]` until implementation and testing.
 
 ## M12
 

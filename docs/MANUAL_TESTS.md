@@ -17,3 +17,11 @@
 5. Stop Redis temporarily and confirm guild configuration reads fall back to PostgreSQL.
 6. Stop PostgreSQL temporarily and confirm the health endpoint reports degraded state rather than
    crashing the process.
+
+## M1
+
+1. Create multiple moderation cases quickly for the same guild and confirm case numbers are
+   contiguous and unique within that guild.
+2. Test ban/kick/timeout hierarchy conflicts with the server owner, self, and a higher-role member.
+3. Add warnings, inspect `/warnings`, and confirm only active warning points are counted.
+4. Run `/clear` in a text channel and confirm purge limits and Manage Messages permissions.

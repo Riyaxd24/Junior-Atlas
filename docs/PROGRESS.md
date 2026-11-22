@@ -76,3 +76,33 @@ PostgreSQL public tables:
 Redis ping:
 PONG
 ```
+
+## M1 - Moderation
+
+Status: in progress
+
+### Starting scope
+
+- Add race-safe per-guild moderation case IDs.
+- Add clear-warning and untimeout/unban workflows.
+- Centralize moderation case lookup and reason updates.
+- Add moderation log, case, nickname, role, and purge surfaces.
+
+### Implemented checkpoint
+
+- Added a per-guild moderation case ID column and a race-safe counter table.
+- Added migration `0020_m1_moderation_cases` with existing-row backfill.
+- Added clear-warning service support.
+- Preserved the existing warn, warnings, timeout, ban, kick, clear, slowmode, lock, and
+  unlock slash surfaces.
+- Consolidated the implementation to remain under Discord's 100 global slash-command limit.
+
+Verification:
+
+```text
+pytest -q:
+359 passed, 1 warning
+
+Alembic:
+0020_m1_moderation_cases (head)
+```
