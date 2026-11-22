@@ -57,15 +57,6 @@ class Suggestion(Base):
     status: Mapped[str]=mapped_column(String(20),default='pending',index=True)
     created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),server_default=func.now())
 
-class RoleMenu(Base):
-    __tablename__='role_menus'
-    id: Mapped[int]=mapped_column(Integer,primary_key=True,autoincrement=True)
-    guild_id: Mapped[int]=mapped_column(BigInteger,index=True)
-    message_id: Mapped[int]=mapped_column(BigInteger,index=True)
-    emoji: Mapped[str]=mapped_column(String(64))
-    role_id: Mapped[int]=mapped_column(BigInteger)
-    __table_args__=(UniqueConstraint('guild_id','message_id','emoji'),)
-
 class Economy(Base):
     __tablename__='economy'
     id: Mapped[int]=mapped_column(Integer,primary_key=True,autoincrement=True)

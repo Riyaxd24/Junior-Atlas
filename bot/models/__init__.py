@@ -7,10 +7,10 @@ from .extended import (
     ModCase,
     ModerationCounter,
     Reminder,
-    RoleMenu,
     Suggestion,
 )
 from .logging import LogPrivacySetting, LogRecord, LogSetting
+from .roles import RoleMenu, RoleMenuItem, TempRole, VerificationSetting
 from .schema import (
     Base,
     CustomCommand,
@@ -60,9 +60,12 @@ __all__ = [
     "Reminder",
     "Reputation",
     "RoleMenu",
+    "RoleMenuItem",
     "ScheduledAction",
     "SecurityEvent",
     "Suggestion",
+    "TempRole",
     "Ticket",
+    "VerificationSetting",
     "Warning",
 ]

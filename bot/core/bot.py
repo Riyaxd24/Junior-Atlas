@@ -39,7 +39,7 @@ from bot.workers.greetings import GreetingWorker
 from bot.workers.scheduler import Scheduler
 
 log=logging.getLogger('bot')
-EXTENSIONS=('bot.commands.greeting','bot.commands.greeting_prefix','bot.commands.rules','bot.commands.moderation','bot.commands.logging','bot.commands.automod','bot.commands.fun','bot.commands.utility','bot.commands.invites','bot.commands.music','bot.commands.admin','bot.commands.community','bot.commands.custom','bot.commands.tickets','bot.commands.platform','bot.commands.control','bot.commands.engagement','bot.commands.security','bot.commands.text','bot.commands.help','bot.commands.prefix','bot.commands.extreme','bot.commands.levels')
+EXTENSIONS=('bot.commands.greeting','bot.commands.greeting_prefix','bot.commands.rules','bot.commands.moderation','bot.commands.logging','bot.commands.automod','bot.commands.roles','bot.commands.fun','bot.commands.utility','bot.commands.invites','bot.commands.music','bot.commands.admin','bot.commands.community','bot.commands.custom','bot.commands.tickets','bot.commands.platform','bot.commands.control','bot.commands.engagement','bot.commands.security','bot.commands.text','bot.commands.help','bot.commands.prefix','bot.commands.extreme','bot.commands.levels')
 class Bot(commands.AutoShardedBot):
     @staticmethod
     async def _command_prefix(bot, message):

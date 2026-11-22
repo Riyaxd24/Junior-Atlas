@@ -52,3 +52,14 @@ Status: implementation complete
 - Added bot/owner/admin/higher-role safety guards and moderation logging tables.
 - Migration: `0022_m3_automod`.
 - Verification: 370 tests passed, 1 warning; M3 Ruff checks passed.
+
+## M4 - Welcome, verification, and roles
+
+Status: in progress
+
+### Starting scope
+
+- Preserve and test existing welcome/goodbye placeholder and embed behavior.
+- Add persistent button verification with rules acceptance.
+- Add button/select role menus with role-hierarchy and exclusivity controls.
+- Add temporary-role records and expiry cleanup support.
