@@ -1,4 +1,4 @@
-# Fallen v0.3 Extreme Hardening
+# Junior Atlas Extreme Hardening
 
 This release strengthens the distributed cache path beyond process-local single-flight.
 
@@ -25,7 +25,7 @@ The design targets bounded memory, stale-writer rejection, poison-event isolatio
 
 ## V16 capability honesty and recovery safety
 
-The 100-entry V16 list is a catalog, not proof that all 100 capabilities are implemented.
+The 100-entry list is a catalog, not proof that all 100 capabilities are implemented.
 Only entries in `IMPLEMENTED_FEATURES` can be enabled. Stale database values for catalog-only
 entries are ignored and reported by `/v16 validate`. Do not describe catalog-only entries as
 active security controls.
