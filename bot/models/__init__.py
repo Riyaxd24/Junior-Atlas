@@ -1,3 +1,4 @@
+from .achievements import Achievement, MemberAchievement
 from .automod import AutoModLog, AutoModMessageEvent
 from .economy import EconomyTransaction, ShopItem, UserInventory
 from .extended import (
@@ -36,6 +37,7 @@ from .v16 import (
 )
 
 __all__ = [
+    "Achievement",
     "AutoModLog",
     "AutoModMessageEvent",
     "AutoModRule",
@@ -54,6 +56,7 @@ __all__ = [
     "LogPrivacySetting",
     "LogRecord",
     "LogSetting",
+    "MemberAchievement",
     "MemberInviteAttribution",
     "MemberProfile",
     "ModCase",

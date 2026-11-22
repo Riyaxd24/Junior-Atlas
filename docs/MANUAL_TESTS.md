@@ -75,3 +75,9 @@
 2. Deposit and withdraw coins and confirm wallet and bank totals remain non-negative.
 3. Pay another member repeatedly with the same interaction and confirm no duplicate debit/credit.
 4. Inspect the economy leaderboard and transaction ledger after transfers.
+
+## M8
+
+1. Send messages and confirm XP gains respect ignored channels/roles and cooldown.
+2. Cross a level threshold and confirm the level-up reward and achievement unlock occur once.
+3. Run `/level leaderboard`, `/level rank`, and `/level achievements` for a test member.

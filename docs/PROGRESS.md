@@ -91,6 +91,26 @@ Status: checkpoint complete
 - Migration: `0025_m7_economy_ledger`.
 - Verification: 382 tests passed, 1 warning; M7 Ruff checks passed.
 
+## M8 - Leveling and achievements
+
+Status: checkpoint complete
+
+- Preserved existing cumulative XP math, Redis cooldown, role rewards, rank, and leaderboard.
+- Added achievement definitions/member unlocks and migration `0026_m8_achievements`.
+- Added `/level achievements` and automatic level/XP unlock evaluation.
+- Verification: 385 tests passed, 1 warning; M8 Ruff checks passed.
+
+## M8 - Leveling and achievements
+
+Status: in progress
+
+### Starting scope
+
+- Preserve existing cumulative XP math, Redis cooldown, role rewards, and rank/leaderboard surfaces.
+- Add guild achievement definitions and member achievement unlock records.
+- Add level/XP unlock evaluation and `/level achievements` listing.
+- Add rank-card-safe data helpers for future image rendering.
+
 ## M7 - Economy
 
 Status: in progress

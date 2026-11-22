@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import random
+from typing import ClassVar
+
 from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
@@ -8,7 +10,7 @@ from bot.models import Level, LevelRole, LevelSettings
 
 
 class LevelService:
-    DEFAULTS = {
+    DEFAULTS: ClassVar[dict] = {
         "enabled": True,
         "xp_min": 8,
         "xp_max": 15,

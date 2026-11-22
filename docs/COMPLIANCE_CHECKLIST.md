@@ -54,6 +54,10 @@ M7 economy: `[~]` existing balance/daily workflows plus wallet/bank migration, i
 transaction ledger, pay/transfer locking, idempotency, deposit/withdraw, work/weekly, and
 leaderboard services are implemented; shop inventory and Discord command surfaces continue.
 
+M8 leveling/achievements: `[~]` existing XP math, Redis cooldown, role rewards, rank/leaderboard,
+and rank-card data are retained; achievement definitions/unlocks and `/level achievements`
+are implemented.
+
 All Module D through K, M, N, and L work remains `[ ]` until implementation and testing.
 
 ## M12

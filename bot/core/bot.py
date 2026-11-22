@@ -17,6 +17,7 @@ from bot.core.metrics import EVENTS, GATEWAY_LATENCY, GUILDS, start_metrics
 from bot.core.prefix_errors import handle_prefix_command_error
 from bot.core.shard_lease import ShardLeaseManager, resolve_shard_ids
 from bot.core.telemetry import setup_telemetry
+from bot.services.achievements import AchievementService
 from bot.services.antiraid import AntiRaid
 from bot.services.automod import AutoModService
 from bot.services.custom_commands import CustomCommandService
@@ -73,7 +74,7 @@ class Bot(commands.AutoShardedBot):
         self.welcome_engine=WelcomeEngine(self)
         self.greetings=GreetingRenderer(); self.music=MusicService(self,settings.music_url,settings.music_password); self.greeting_worker=GreetingWorker(self,settings.greeting_queue_size,settings.greeting_workers,settings.greeting_max_event_age)
         self.invalidation=CacheInvalidationSubscriber(self.cache); self.scheduler=Scheduler(self); self.dashboard=DashboardAPI(self,settings.dashboard_host,settings.dashboard_port)
-        self.automod=AutoModService(self.cache, settings.automod_heat_decay, settings.automod_heat_ttl); self.custom_commands=CustomCommandService(self.db,self.cache); self.levels=LevelService(self.db); self.tickets=TicketService(); self.platform=PlatformService(self.db); self.extreme=ExtremeService(self.db); self.v16=V16Runtime(self);         self.antiraid=AntiRaid(self.cache); self.anti_nuke=AntiNukeService(); self.reactions=ReactionGifService(); self.uwuify=UwuifyService(self.cache); self.invites=InviteTracker(self.db,self.cache,settings.invite_join_queue_size,settings.invite_stat_flush_interval,bot=self)
+        self.automod=AutoModService(self.cache, settings.automod_heat_decay, settings.automod_heat_ttl); self.custom_commands=CustomCommandService(self.db,self.cache); self.levels=LevelService(self.db); self.tickets=TicketService(); self.platform=PlatformService(self.db); self.extreme=ExtremeService(self.db); self.v16=V16Runtime(self);                 self.antiraid=AntiRaid(self.cache); self.anti_nuke=AntiNukeService(); self.achievements=AchievementService(self.db); self.reactions=ReactionGifService(); self.uwuify=UwuifyService(self.cache); self.invites=InviteTracker(self.db,self.cache,settings.invite_join_queue_size,settings.invite_stat_flush_interval,bot=self)
         self.gateway_queue=GatewayEventQueue(settings.gateway_queue_size, settings.gateway_critical_queue_size); self.gateway_workers=GatewayWorkerPool(self,self.gateway_queue,settings.gateway_workers,settings.gateway_guild_concurrency,settings.gateway_max_event_age,settings.gateway_dlq_maxsize)
         self.shard_leases=ShardLeaseManager(self.cache, settings.instance_id, settings.shard_lease_ttl_ms); self.shard_leases.bind_shutdown(self.close); self.db.set_fence_guard(self.shard_leases.validate_fence)
         self._xp_cooldown={}; self._xp_cap=200000; self.health_runner=None
@@ -1171,6 +1172,12 @@ class Bot(commands.AutoShardedBot):
 
             key = (message.guild.id, message.author.id)
             new_level, leveled_up, _, total_xp = await self.levels.add_xp(*key, amount=amount)
+            await self.achievements.evaluate(
+                message.guild.id,
+                message.author.id,
+                new_level,
+                total_xp,
+            )
             if not leveled_up:
                 return
 

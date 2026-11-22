@@ -1,7 +1,8 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from bot.ui import info_embed, success_embed, error_embed
+
+from bot.ui import info_embed, success_embed
 
 
 class Levels(commands.GroupCog, name='level'):
@@ -93,6 +94,26 @@ class Levels(commands.GroupCog, name='level'):
             embed=info_embed(
                 f'Rank • {member.display_name}',
                 f'{member.mention} is **#{rank}** with **{total:,} total XP**.' if rank else f'{member.mention} is currently unranked.'
+            ),
+            ephemeral=True,
+        )
+
+    @app_commands.command(name='achievements', description='Show unlocked achievements')
+    @app_commands.guild_only()
+    async def achievements(self, interaction: discord.Interaction, member: discord.Member | None = None):
+        member = member or interaction.user
+        unlocked = await self.bot.achievements.list_for_member(
+            interaction.guild.id,
+            member.id,
+        )
+        lines = [
+            f"**{achievement.name}** — {achievement.description}"
+            for achievement in unlocked
+        ]
+        await interaction.response.send_message(
+            embed=info_embed(
+                f"Achievements • {member.display_name}",
+                "\n".join(lines) if lines else "No achievements unlocked yet.",
             ),
             ephemeral=True,
         )
@@ -245,7 +266,7 @@ class Levels(commands.GroupCog, name='level'):
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(manage_guild=True)
     async def xp_add(self, interaction: discord.Interaction, member: discord.Member, amount: app_commands.Range[int, 1, 1000000]):
-        _, level, xp, total = await self.bot.levels.modify_xp(interaction.guild.id, member.id, amount)
+        _, level, _xp, total = await self.bot.levels.modify_xp(interaction.guild.id, member.id, amount)
         await interaction.response.send_message(
             embed=success_embed('XP added', f'{member.mention} received **{amount:,} XP**.\nLevel **{level}** · Total **{total:,} XP**.'),
             ephemeral=True,
@@ -255,7 +276,7 @@ class Levels(commands.GroupCog, name='level'):
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(manage_guild=True)
     async def xp_remove(self, interaction: discord.Interaction, member: discord.Member, amount: app_commands.Range[int, 1, 1000000]):
-        _, level, xp, total = await self.bot.levels.modify_xp(interaction.guild.id, member.id, -amount)
+        _, level, _xp, total = await self.bot.levels.modify_xp(interaction.guild.id, member.id, -amount)
         await interaction.response.send_message(
             embed=success_embed('XP removed', f'{member.mention} lost **{amount:,} XP**.\nLevel **{level}** · Total **{total:,} XP**.'),
             ephemeral=True,
@@ -265,7 +286,7 @@ class Levels(commands.GroupCog, name='level'):
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(manage_guild=True)
     async def xp_set(self, interaction: discord.Interaction, member: discord.Member, amount: app_commands.Range[int, 0, 10000000]):
-        _, level, xp, total = await self.bot.levels.modify_xp(interaction.guild.id, member.id, amount, set_value=True)
+        _, level, _xp, total = await self.bot.levels.modify_xp(interaction.guild.id, member.id, amount, set_value=True)
         await interaction.response.send_message(
             embed=success_embed('XP set', f'{member.mention} now has **{total:,} total XP**.\nLevel **{level}**.'),
             ephemeral=True,
