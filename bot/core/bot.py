@@ -28,6 +28,7 @@ from bot.services.levels import LevelService
 from bot.services.music import MusicService
 from bot.services.platform import PlatformService
 from bot.services.reactions import ReactionGifService
+from bot.services.security import AntiNukeService
 from bot.services.tickets import TicketService
 from bot.services.uwuify import UwuifyService
 from bot.services.v16_runtime import V16Runtime
@@ -72,7 +73,7 @@ class Bot(commands.AutoShardedBot):
         self.welcome_engine=WelcomeEngine(self)
         self.greetings=GreetingRenderer(); self.music=MusicService(self,settings.music_url,settings.music_password); self.greeting_worker=GreetingWorker(self,settings.greeting_queue_size,settings.greeting_workers,settings.greeting_max_event_age)
         self.invalidation=CacheInvalidationSubscriber(self.cache); self.scheduler=Scheduler(self); self.dashboard=DashboardAPI(self,settings.dashboard_host,settings.dashboard_port)
-        self.automod=AutoModService(self.cache, settings.automod_heat_decay, settings.automod_heat_ttl); self.custom_commands=CustomCommandService(self.db,self.cache); self.levels=LevelService(self.db); self.tickets=TicketService(); self.platform=PlatformService(self.db); self.extreme=ExtremeService(self.db); self.v16=V16Runtime(self); self.antiraid=AntiRaid(self.cache); self.reactions=ReactionGifService(); self.uwuify=UwuifyService(self.cache); self.invites=InviteTracker(self.db,self.cache,settings.invite_join_queue_size,settings.invite_stat_flush_interval,bot=self)
+        self.automod=AutoModService(self.cache, settings.automod_heat_decay, settings.automod_heat_ttl); self.custom_commands=CustomCommandService(self.db,self.cache); self.levels=LevelService(self.db); self.tickets=TicketService(); self.platform=PlatformService(self.db); self.extreme=ExtremeService(self.db); self.v16=V16Runtime(self);         self.antiraid=AntiRaid(self.cache); self.anti_nuke=AntiNukeService(); self.reactions=ReactionGifService(); self.uwuify=UwuifyService(self.cache); self.invites=InviteTracker(self.db,self.cache,settings.invite_join_queue_size,settings.invite_stat_flush_interval,bot=self)
         self.gateway_queue=GatewayEventQueue(settings.gateway_queue_size, settings.gateway_critical_queue_size); self.gateway_workers=GatewayWorkerPool(self,self.gateway_queue,settings.gateway_workers,settings.gateway_guild_concurrency,settings.gateway_max_event_age,settings.gateway_dlq_maxsize)
         self.shard_leases=ShardLeaseManager(self.cache, settings.instance_id, settings.shard_lease_ttl_ms); self.shard_leases.bind_shutdown(self.close); self.db.set_fence_guard(self.shard_leases.validate_fence)
         self._xp_cooldown={}; self._xp_cap=200000; self.health_runner=None
@@ -859,6 +860,21 @@ class Bot(commands.AutoShardedBot):
             return
         now = asyncio.get_running_loop().time()
         self._prune_destructive_actions(now)
+        member = guild.get_member(actor_id)
+        if member is None:
+            try:
+                member = await guild.fetch_member(actor_id)
+            except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                member = None
+        if member is not None and self.anti_nuke.trusted(member):
+            self._destructive_actions.pop((guild.id, actor_id, "destructive"), None)
+            return
+        assessment = self.anti_nuke.observe(
+            guild.id,
+            actor_id,
+            action,
+            confidence=0.99,
+        )
         # Count destructive events across channel and role deletes so an actor
         # cannot evade the threshold by alternating action types.
         key = (guild.id, actor_id, "destructive")
@@ -870,18 +886,12 @@ class Bot(commands.AutoShardedBot):
             guild.id, action, actor_id=actor_id, target_id=target_id,
             details={"burst_count": len(q)},
         )
-        if len(q) >= 3 and await self.extreme.enabled(guild.id, "automatic_lockdown"):
+        if assessment["automate"] and await self.extreme.enabled(guild.id, "automatic_lockdown"):
             # The owner is the final authority; never let an anti-nuke burst
             # attributed to the owner trigger quarantine, restore, or lockdown.
             if actor_id == getattr(guild, "owner_id", None):
                 self._destructive_actions.pop(key, None)
                 return
-            member = guild.get_member(actor_id)
-            if member is None:
-                try:
-                    member = await guild.fetch_member(actor_id)
-                except (discord.NotFound, discord.Forbidden, discord.HTTPException):
-                    member = None
             if member is not None:
                 await self.quarantine_member(guild, member, reason=f"Fallen anti-nuke: {action} burst")
             # Recovery and containment must still run if the actor is uncached

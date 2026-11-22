@@ -46,6 +46,10 @@ M5 tickets: `[~]` persistent panels/tickets/transcripts, open/claim/close/reopen
 and strict permission construction are implemented; add/remove/staff assignment and cleanup
 remain in progress.
 
+M6 security/anti-nuke: `[~]` destructive-action assessment, threshold/confidence safeguards,
+trusted owner/admin exemptions, and quarantine/lockdown recovery remain implemented; Redis
+sliding windows and full event-stream confidence tuning continue.
+
 All Module D through K, M, N, and L work remains `[ ]` until implementation and testing.
 
 ## M12

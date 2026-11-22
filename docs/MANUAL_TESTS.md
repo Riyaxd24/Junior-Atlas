@@ -59,3 +59,11 @@
 2. Claim and close a ticket, then reopen it and confirm illegal transitions are rejected.
 3. Create a transcript and confirm message authors and content are stored without exposing
    secrets or tokens.
+
+## M6
+
+1. Create a single channel or role deletion event and confirm it alerts only, not quarantine.
+2. Reproduce the configured destructive threshold and confirm owner and administrator actors
+   are never quarantined or locked down.
+3. Exercise rapid deletes with audit attribution and confirm quarantine/lockdown can be unlocked
+   from the preserved snapshot.

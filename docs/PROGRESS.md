@@ -72,6 +72,26 @@ Status: checkpoint complete
 - Replaced the extra top-level close command with controls on the ticket panel.
 - Verification: 375 tests passed, 1 warning; M5 migration reached head.
 
+## M6 - Security and anti-nuke
+
+Status: checkpoint complete
+
+- Added threshold-plus-confidence anti-nuke assessment.
+- Added trusted owner/admin exemptions and destructive-action integration.
+- Preserved audit-log event timelines and lockdown/quarantine recovery.
+- Verification: 379 tests passed, 1 warning; M6 Ruff checks passed.
+
+## M6 - Security and anti-nuke
+
+Status: in progress
+
+### Starting scope
+
+- Add threshold-plus-confidence anti-nuke assessment for channel/role/ban/kick/raid events.
+- Preserve trusted-owner/admin and audit-log safeguards.
+- Extend security event persistence for every automated action.
+- Preserve reviewable lockdown/quarantine recovery workflows.
+
 ## M5 - Tickets
 
 Status: in progress
