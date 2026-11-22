@@ -2,6 +2,7 @@ install:
 	pip install -r requirements.txt
 lint:
 	python -m compileall -q bot
+	ruff check bot scripts tests
 
 test:
 	pytest -q

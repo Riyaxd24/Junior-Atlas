@@ -215,3 +215,25 @@ Status: in progress
 - Add persistent button verification with rules acceptance.
 - Add button/select role menus with role-hierarchy and exclusivity controls.
 - Add temporary-role records and expiry cleanup support.
+
+## M12 - Finalization
+
+Status: in progress
+
+### Starting scope
+
+- Complete README and final architecture/report documentation.
+- Add a secret-scanning script that reports only counts and file locations.
+- Run pytest, dependency checks, Ruff, Docker build, Compose configuration, and migration current.
+- Complete compliance status and known-limitations report.
+
+### Final validation
+
+- Pytest: 396 passed, 1 warning.
+- Secret scan: no potential worktree assignments; no secret-like `.env` paths in history.
+- Docker image build: `junior-atlas:final` built successfully.
+- Docker Compose interpolation/configuration: valid.
+- Alembic current: `0028_m10_community` (head).
+- Ruff full-repository baseline: 203 findings remaining, primarily pre-existing formatting debt.
+- Dependency check: project virtual environment reported only environment-level
+  `python-debian`/`nala`/`h11`/`typer` conflicts outside the pinned application requirements.

@@ -73,7 +73,7 @@ All Module D through K, M, N, and L work remains `[ ]` until implementation and 
 
 ## M12
 
-- [ ] Full test matrix.
-- [ ] Security review and secret scan.
-- [ ] Docker finalization.
-- [ ] Complete documentation and final report.
+- [~] Full test matrix.
+- [x] Security review and secret scan.
+- [x] Docker finalization.
+- [x] Complete documentation and final report.
