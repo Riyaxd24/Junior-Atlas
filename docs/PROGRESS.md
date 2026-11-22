@@ -109,6 +109,27 @@ Status: checkpoint complete
 - Added timeout-safe Discord views under `/engage tictactoe`, `/engage rps`, and `/engage trivia`.
 - Verification: 392 tests passed, 1 warning; M9 Ruff checks passed.
 
+## M10 - Collection, voice, giveaways, community, and utility
+
+Status: checkpoint complete
+
+- Added collectible, user collection, giveaway entry, temp voice, poll, and starboard models.
+- Added migration `0028_m10_community`.
+- Added `/engage collect` and `/engage tempvoice` subcommands with Redis cooldown fallback.
+- Verification: 394 tests passed, 1 warning; M10 Ruff checks passed.
+
+## M10 - Collection, voice, giveaways, community, and utility
+
+Status: in progress
+
+### Starting scope
+
+- Add guild-scoped collectible catalog/user collection and daily reward service.
+- Add join-to-create temporary voice settings/channels and cleanup service.
+- Add giveaway entries and reroll/history persistence.
+- Add polls, starboard, reminders, and existing utility surfaces.
+- Keep all entry points under existing command groups to respect Discord limits.
+
 ## M9 - Games
 
 Status: in progress

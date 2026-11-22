@@ -1,5 +1,14 @@
 from .achievements import Achievement, MemberAchievement
 from .automod import AutoModLog, AutoModMessageEvent
+from .community import (
+    CollectibleItem,
+    GiveawayEntry,
+    Poll,
+    StarboardMessage,
+    TempVoiceChannel,
+    TempVoiceSetting,
+    UserCollection,
+)
 from .economy import EconomyTransaction, ShopItem, UserInventory
 from .extended import (
     Economy,
@@ -43,6 +52,7 @@ __all__ = [
     "AutoModMessageEvent",
     "AutoModRule",
     "Base",
+    "CollectibleItem",
     "ConfigSnapshot",
     "CustomCommand",
     "Economy",
@@ -51,6 +61,7 @@ __all__ = [
     "GameSession",
     "GameStats",
     "Giveaway",
+    "GiveawayEntry",
     "GuildConfig",
     "InviteStat",
     "Level",
@@ -65,6 +76,7 @@ __all__ = [
     "ModCase",
     "ModerationCounter",
     "Playlist",
+    "Poll",
     "ReactionRole",
     "Reminder",
     "Reputation",
@@ -73,12 +85,16 @@ __all__ = [
     "ScheduledAction",
     "SecurityEvent",
     "ShopItem",
+    "StarboardMessage",
     "Suggestion",
     "TempRole",
+    "TempVoiceChannel",
+    "TempVoiceSetting",
     "Ticket",
     "TicketMessage",
     "TicketPanel",
     "TicketRecord",
+    "UserCollection",
     "UserInventory",
     "VerificationSetting",
     "Warning",

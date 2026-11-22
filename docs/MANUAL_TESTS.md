@@ -88,3 +88,10 @@
 2. Confirm illegal and occupied moves are rejected and a three-in-a-row wins.
 3. Start `/engage rps` and confirm choices remain private until both players submit.
 4. Start `/engage trivia` and confirm correct/incorrect answers resolve once.
+
+## M10
+
+1. Run `/engage collect` twice quickly and confirm only one daily collectible is granted.
+2. Configure a join-to-create voice hub and confirm joining creates and occupies a temp channel.
+3. Leave the temp channel empty and confirm it is cleaned up.
+4. Create a poll and confirm existing community utility commands remain responsive.

@@ -61,6 +61,10 @@ are implemented.
 M9 games: `[~]` session/stat schema, tested Tic-Tac-Toe/RPS/trivia engines, timeout-safe Discord
 views, and `/engage` subcommands are implemented; remaining multiplayer games continue.
 
+M10 collection/voice/community/utility: `[~]` collectible, giveaway-entry, temp-voice, poll,
+starboard, and utility persistence is implemented; full giveaway/voice controls and
+additional utility providers continue.
+
 All Module D through K, M, N, and L work remains `[ ]` until implementation and testing.
 
 ## M12

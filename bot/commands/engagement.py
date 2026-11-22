@@ -4,6 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from bot.services.community import CommunityService
 from bot.services.games import RPSEngine, TicTacToeEngine, TriviaEngine
 from bot.ui import error_embed, info_embed, success_embed
 
@@ -254,6 +255,61 @@ class Engagement(commands.GroupCog, name='engage'):
             view=view,
             ephemeral=True,
         )
+
+    @app_commands.command(name='collect', description='Claim your daily community collectible')
+    @app_commands.guild_only()
+    async def collect(self, interaction: discord.Interaction):
+        item = await CommunityService(self.bot.db, self.bot.cache).daily_collect(
+            interaction.guild.id,
+            interaction.user.id,
+        )
+        if item is None:
+            await interaction.response.send_message(
+                "Your daily collectible is already claimed.",
+                ephemeral=True,
+            )
+            return
+        await interaction.response.send_message(
+            embed=success_embed(
+                "Daily collectible",
+                f"You found **{item.emoji} {item.name}** ({item.rarity}).",
+            )
+        )
+
+    @app_commands.command(name='tempvoice', description='Configure a join-to-create voice hub')
+    @app_commands.guild_only()
+    @app_commands.default_permissions(manage_channels=True)
+    async def tempvoice(
+        self,
+        interaction: discord.Interaction,
+        hub: discord.VoiceChannel,
+        category: discord.CategoryChannel | None = None,
+        name_format: str = "{user}'s Channel",
+        user_limit: app_commands.Range[int, 0, 99] = 0,
+    ):
+        await CommunityService(self.bot.db, self.bot.cache).configure_temp_voice(
+            interaction.guild.id,
+            hub.id,
+            category.id if category else None,
+            name_format[:100],
+            user_limit,
+        )
+        await interaction.response.send_message(
+            f"Temporary voice hub configured at {hub.mention}.",
+            ephemeral=True,
+        )
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
+        if after.channel is None or before.channel == after.channel:
+            return
+        channel = await CommunityService(self.bot.db, self.bot.cache).create_temp_voice(
+            member.guild,
+            member,
+            after.channel.id,
+        )
+        if channel is not None:
+            return
 
 
 async def setup(bot):
