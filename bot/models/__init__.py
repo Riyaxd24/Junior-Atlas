@@ -1,3 +1,4 @@
+from .automod import AutoModLog, AutoModMessageEvent
 from .extended import (
     Economy,
     Giveaway,
@@ -33,6 +34,8 @@ from .v16 import (
 )
 
 __all__ = [
+    "AutoModLog",
+    "AutoModMessageEvent",
     "AutoModRule",
     "Base",
     "ConfigSnapshot",

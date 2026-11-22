@@ -2,139 +2,53 @@
 
 ## Stage 0 - Audit and baseline
 
-Status: in progress
+Status: complete
 
-### Completed
-
-- Read the repository, architecture, configuration, migration, Docker, and command code.
-- Confirmed upstream remote is preserved.
-- Created a Python 3.12 virtual environment with uv.
-- Captured baseline test and Ruff output.
-- Started PostgreSQL 17 and Redis 8 containers.
-- Built the application Docker image.
-- Verified `alembic upgrade head` reached `0018_guild_command_prefix`.
-- Verified PostgreSQL has 25 public tables and Redis responds `PONG`.
-- Confirmed bot startup reaches Discord login but cannot authenticate without a real token.
-- Created initial audit, compliance, and specification documents.
-- Added NOTICE attribution for the FALLEN base.
-
-### Baseline results
-
-- 346 tests passed, 8 failed.
-- 244 Ruff findings.
-- Migration head: `0018_guild_command_prefix`.
-- PostgreSQL public tables: 25.
-- Redis: PONG.
-
-### Blocked/awaiting approval
-
-- No `.env` or real Discord token is available.
-- Alembic `downgrade base` is destructive and not run until approved.
-- Deleting `Fallen-v1.2-uwuify.zip` and either duplicate dashboard implementation requires
-  explicit approval.
-
-### Next
-
-After destructive-operation approval, run the migration round trip and Stage 0 cleanup decisions,
-then commit Stage 0 and stop for milestone approval.
+- Captured the baseline status, audit, and migration head.
+- PostgreSQL and Redis were started and healthy.
+- Alembic reached `0018_guild_command_prefix`.
+- Baseline: 346 tests passed, 8 failed.
+- Baseline Ruff: 244 findings.
+- No real Discord token was available for live gateway testing.
 
 ## M0 - Foundation hardening
 
-Status: in progress
+Status: complete
 
-### Starting scope
-
-- Replace the environment dataclass with Pydantic Settings validation.
-- Add the required environment settings and owner-ID parsing.
-- Pin dependencies and add ARQ.
-- Port the Junior Atlas theme, pagination, confirmation, and permission patterns.
-- Expand `/config` and central permission/error behavior.
-
-### M0 completed
-
-- Added Pydantic Settings validation and required environment variables.
-- Pinned and compiled mutually compatible Python dependencies.
-- Added ARQ 0.26.3; Redis aligned to redis-py 5.3.1.
-- Added `/config` slash commands for show, prefix, moderation log, and moderation role.
-- Added a guild settings migration with `mod_role_id` and `timezone`.
-- Ported the Junior Atlas theme palette, embed, paginator, confirmation, and permission patterns.
-- Preserved guild-config Redis fallback and invalidation behavior.
-- Restored the legacy `fuck` command registration safely with a punch GIF key.
-
-Verification:
-
-```text
-
-## M2 - Server logging
-
-Status: in progress
-
-### Starting scope
-
-- Add guild log settings, privacy settings, exemptions, and minimal retained records.
-- Add `/logs channel`, `/logs toggle`, `/logs privacy`, and `/logs exempt`.
-- Listen for message, member, role, channel, voice, and moderation events.
-- Keep message content opt-in and cap both storage and embeds.text
-
-### Implemented
-
-- Added `log_settings`, `log_privacy_settings`, and `log_records` migration/models.
-- Added a logging repository and privacy-conscious application service.
-- Added `/logs channel`, `/logs toggle`, `/logs privacy`, and `/logs exempt`.
-- Added Discord listeners for message, member, role, channel, voice, ban, and unban events.
-- Redis cache reads/writes degrade safely when Redis is unavailable.
-
-Verification:
-
-```text
-pytest -q:
-364 passed, 1 warning
-
-Ruff (M2 files):
-All checks passed
-
-Alembic:
-0021_m2_server_logging (head)
-```text
-pytest -q:
-359 passed, 1 warning
-
-Alembic:
-0019_m0_guild_settings (head)
-
-PostgreSQL public tables:
-25
-
-Redis ping:
-PONG
-```
+- Added Pydantic Settings validation and pinned dependencies.
+- Added ARQ compatibility and required environment settings.
+- Added `/config`, theme/paginator/confirmation utilities, permissions, Redis fallback, and
+  migration `0019_m0_guild_settings`.
+- Verification: 359 tests passed, 1 warning.
+- Commit: `d891b17 M0: foundation hardening`.
 
 ## M1 - Moderation
 
-Status: in progress
+Status: checkpoint complete
 
-### Starting scope
+- Added race-safe per-guild moderation case IDs and migration `0020_m1_moderation_cases`.
+- Added clear-warning service support and retained existing moderation surfaces.
+- Verification: 359 tests passed, 1 warning.
+- Commit: `52e1da3 M1: moderation case hardening`.
 
-- Add race-safe per-guild moderation case IDs.
-- Add clear-warning and untimeout/unban workflows.
-- Centralize moderation case lookup and reason updates.
-- Add moderation log, case, nickname, role, and purge surfaces.
+## M2 - Server logging
 
-### Implemented checkpoint
+Status: complete
 
-- Added a per-guild moderation case ID column and a race-safe counter table.
-- Added migration `0020_m1_moderation_cases` with existing-row backfill.
-- Added clear-warning service support.
-- Preserved the existing warn, warnings, timeout, ban, kick, clear, slowmode, lock, and
-  unlock slash surfaces.
-- Consolidated the implementation to remain under Discord's 100 global slash-command limit.
+- Added guild log settings, privacy settings, exemptions, records, and migration
+  `0021_m2_server_logging`.
+- Added `/logs` configuration and message/member/role/channel/voice/ban/unban listeners.
+- Redis cache degrade-to-database behavior is implemented.
+- Verification: 364 tests passed, 1 warning.
+- Commit: `e1f6572 M2: server logging`.
 
-Verification:
+## M3 - AutoMod
 
-```text
-pytest -q:
-359 passed, 1 warning
+Status: implementation complete
 
-Alembic:
-0020_m1_moderation_cases (head)
-```
+- Added rule, repetition, mention, invite, blocked-word, link, emoji, caps, and length
+  inspection.
+- Added `/automod` rule, exemption, word, link-domain, and escalation configuration.
+- Added bot/owner/admin/higher-role safety guards and moderation logging tables.
+- Migration: `0022_m3_automod`.
+- Verification: 370 tests passed, 1 warning; M3 Ruff checks passed.

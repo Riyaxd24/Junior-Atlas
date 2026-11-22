@@ -35,6 +35,9 @@ M1 command and history hardening is in progress.
 M2 server logging: `[x]` per-guild settings, privacy, exempt channels, retention, and
 message/member/role/channel/voice/ban/unban listeners are implemented and tested.
 
+M3 AutoMod: `[~]` rule engine, `/automod` configuration, false-positive boundaries, exemptions,
+and escalation are implemented; broader integration and Redis sliding-window coverage continue.
+
 All Module D through K, M, N, and L work remains `[ ]` until implementation and testing.
 
 ## M12

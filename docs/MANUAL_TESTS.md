@@ -35,3 +35,12 @@
    retained.
 4. Exempt a channel and confirm no log record or delivery occurs there.
 5. Set retention to a short period and run the cleanup path to confirm expired rows are removed.
+
+## M3
+
+1. Enable a blocked-word rule and verify normal words containing the pattern are not false-positive
+   matches.
+2. Enable the invite filter and confirm a complete Discord invite is detected while `discord.gg`
+   alone is ignored.
+3. Configure allow and deny link domains and verify the allow rule takes precedence.
+4. Configure a timeout escalation and confirm a member is never acted on above the bot's role.
