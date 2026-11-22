@@ -95,3 +95,10 @@
 2. Configure a join-to-create voice hub and confirm joining creates and occupies a temp channel.
 3. Leave the temp channel empty and confirm it is cleaned up.
 4. Create a poll and confirm existing community utility commands remain responsive.
+
+## M11
+
+1. Start the ARQ worker service and confirm `ping` returns `pong`.
+2. Stop Redis and confirm the worker reports degraded Redis while database cleanup remains usable.
+3. Run cleanup jobs twice and confirm the second run removes no duplicate rows.
+4. Schedule a reminder and confirm it remains delivered once despite scheduler restart.

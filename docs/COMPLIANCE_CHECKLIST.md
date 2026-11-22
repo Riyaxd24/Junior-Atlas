@@ -65,6 +65,10 @@ M10 collection/voice/community/utility: `[~]` collectible, giveaway-entry, temp-
 starboard, and utility persistence is implemented; full giveaway/voice controls and
 additional utility providers continue.
 
+M11 background jobs: `[~]` ARQ worker entrypoint, cron cleanup jobs, health startup/shutdown,
+and idempotency tests are implemented; reminder/temp-role/giveaway ARQ execution continues
+through the existing scheduler.
+
 All Module D through K, M, N, and L work remains `[ ]` until implementation and testing.
 
 ## M12

@@ -118,6 +118,26 @@ Status: checkpoint complete
 - Added `/engage collect` and `/engage tempvoice` subcommands with Redis cooldown fallback.
 - Verification: 394 tests passed, 1 warning; M10 Ruff checks passed.
 
+## M11 - Background jobs and reliability
+
+Status: checkpoint complete
+
+- Added ARQ worker entrypoint and Docker Compose worker service.
+- Added ping, log/automod/temp-role cleanup, and database health maintenance jobs.
+- Preserved the existing reminder/scheduled-action scheduler.
+- Verification: 396 tests passed, 1 warning; M11 worker lint passes.
+
+## M11 - Background jobs and reliability
+
+Status: in progress
+
+### Starting scope
+
+- Add an ARQ worker entrypoint with health startup/shutdown.
+- Add idempotent cleanup jobs for server logs, AutoMod fingerprints, temp roles, and old tickets.
+- Preserve the existing scheduler for reminders and scheduled moderation actions.
+- Add retry/idempotency tests and worker configuration documentation.
+
 ## M10 - Collection, voice, giveaways, community, and utility
 
 Status: in progress

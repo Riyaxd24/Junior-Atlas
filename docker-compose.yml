@@ -1,4 +1,17 @@
 services:
+  worker:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER:-discordbot}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@pgbouncer:6432/${POSTGRES_DB:-discordbot}"
+      REDIS_URL: redis://redis:6379/0
+      DB_USE_PGBOUNCER: "true"
+    command: ["python", "-m", "bot.workers.arq"]
+    restart: unless-stopped
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      pgbouncer: {condition: service_started}
+      redis: {condition: service_healthy}
   migrate:
     build: .
     env_file: .env
