@@ -1,0 +1,39 @@
+# Compliance Checklist
+
+Status: `[x]` implemented and verified, `[~]` partial, `[ ]` missing.
+
+## Stage 0
+
+- [~] Source-of-truth documents restored; repository `SPEC.md` is now present.
+- [x] Clean baseline status captured.
+- [x] Runtime, dependencies, and remotes identified.
+- [x] Pytest baseline run.
+- [x] Ruff baseline run.
+- [x] PostgreSQL and Redis containers started and healthy.
+- [x] Alembic upgrade head verified.
+- [ ] Alembic downgrade/upgrade round trip pending explicit approval.
+- [x] Empty-token bot startup failure verified.
+- [x] NOTICE attribution added.
+- [ ] Archive and duplicate cleanup pending explicit approval.
+
+## M0 - Foundation
+
+- [ ] Python 3.12 floor and pinned dependencies.
+- [ ] Pydantic Settings validation.
+- [ ] Redis cache invalidation and down behavior.
+- [ ] Guild configuration service and `/config`.
+- [ ] Central permission and error layers.
+- [ ] Theme, paginator, and confirmation utilities.
+- [ ] PostgreSQL/Redis health and graceful shutdown.
+- [ ] License and repository policy documents.
+
+## M1-M11
+
+All Module A through K, M, N, and L work remains `[ ]` until implementation and testing.
+
+## M12
+
+- [ ] Full test matrix.
+- [ ] Security review and secret scan.
+- [ ] Docker finalization.
+- [ ] Complete documentation and final report.
