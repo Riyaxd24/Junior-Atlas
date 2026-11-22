@@ -9,6 +9,7 @@ from .extended import (
     RoleMenu,
     Suggestion,
 )
+from .logging import LogPrivacySetting, LogRecord, LogSetting
 from .schema import (
     Base,
     CustomCommand,
@@ -44,6 +45,9 @@ __all__ = [
     "Level",
     "LevelRole",
     "LevelSettings",
+    "LogPrivacySetting",
+    "LogRecord",
+    "LogSetting",
     "MemberInviteAttribution",
     "MemberProfile",
     "ModCase",

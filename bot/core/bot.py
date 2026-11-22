@@ -1,43 +1,45 @@
 import asyncio
-import random
 import logging
-from copy import deepcopy
 from collections import defaultdict, deque
+from copy import deepcopy
+
 import discord
 from discord.ext import commands
-from bot.core.db import Database
-from bot.core.health import start_health_server
-from bot.core.metrics import GATEWAY_LATENCY,GUILDS,EVENTS,start_metrics
-from bot.core.telemetry import setup_telemetry
-from bot.cache.redis import RedisCache
-from bot.cache.rate_limit import DistributedRateLimiter
+
 from bot.cache.invalidation import CacheInvalidationSubscriber
-from bot.services.guild_config import GuildConfigService
-from bot.services.welcome_engine import WelcomeEngine
-from bot.services.greeting import GreetingRenderer
-from bot.services.music import MusicService
+from bot.cache.rate_limit import DistributedRateLimiter
+from bot.cache.redis import RedisCache
+from bot.core.app_errors import handle_app_command_error
+from bot.core.db import Database
+from bot.core.event_queue import GatewayEventQueue
+from bot.core.health import start_health_server
+from bot.core.metrics import EVENTS, GATEWAY_LATENCY, GUILDS, start_metrics
+from bot.core.prefix_errors import handle_prefix_command_error
+from bot.core.shard_lease import ShardLeaseManager, resolve_shard_ids
+from bot.core.telemetry import setup_telemetry
+from bot.services.antiraid import AntiRaid
 from bot.services.automod import AutoModService
 from bot.services.custom_commands import CustomCommandService
-from bot.services.levels import LevelService
-from bot.services.tickets import TicketService
-from bot.services.platform import PlatformService
-from bot.services.antiraid import AntiRaid
-from bot.services.reactions import ReactionGifService
-from bot.services.uwuify import UwuifyService
-from bot.services.invites import InviteTracker
 from bot.services.extreme import ExtremeService
+from bot.services.greeting import GreetingRenderer
+from bot.services.guild_config import GuildConfigService
+from bot.services.invites import InviteTracker
+from bot.services.levels import LevelService
+from bot.services.music import MusicService
+from bot.services.platform import PlatformService
+from bot.services.reactions import ReactionGifService
+from bot.services.tickets import TicketService
+from bot.services.uwuify import UwuifyService
 from bot.services.v16_runtime import V16Runtime
-from bot.workers.greetings import GreetingWorker
-from bot.workers.gateway import GatewayWorkerPool
-from bot.workers.scheduler import Scheduler
-from bot.web.api import DashboardAPI
-from bot.core.event_queue import GatewayEventQueue
-from bot.core.shard_lease import ShardLeaseManager, resolve_shard_ids
-from bot.core.app_errors import handle_app_command_error
-from bot.core.prefix_errors import handle_prefix_command_error
+from bot.services.welcome_engine import WelcomeEngine
 from bot.ui import info_embed
+from bot.web.api import DashboardAPI
+from bot.workers.gateway import GatewayWorkerPool
+from bot.workers.greetings import GreetingWorker
+from bot.workers.scheduler import Scheduler
+
 log=logging.getLogger('bot')
-EXTENSIONS=('bot.commands.greeting','bot.commands.greeting_prefix','bot.commands.rules','bot.commands.moderation','bot.commands.fun','bot.commands.utility','bot.commands.invites','bot.commands.music','bot.commands.admin','bot.commands.community','bot.commands.custom','bot.commands.tickets','bot.commands.platform','bot.commands.control','bot.commands.engagement','bot.commands.security','bot.commands.text','bot.commands.help','bot.commands.prefix','bot.commands.extreme','bot.commands.levels')
+EXTENSIONS=('bot.commands.greeting','bot.commands.greeting_prefix','bot.commands.rules','bot.commands.moderation','bot.commands.logging','bot.commands.fun','bot.commands.utility','bot.commands.invites','bot.commands.music','bot.commands.admin','bot.commands.community','bot.commands.custom','bot.commands.tickets','bot.commands.platform','bot.commands.control','bot.commands.engagement','bot.commands.security','bot.commands.text','bot.commands.help','bot.commands.prefix','bot.commands.extreme','bot.commands.levels')
 class Bot(commands.AutoShardedBot):
     @staticmethod
     async def _command_prefix(bot, message):

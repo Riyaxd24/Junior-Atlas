@@ -32,6 +32,9 @@ Status: `[x]` implemented and verified, `[~]` partial, `[ ]` missing.
 M1 moderation: `[~]` existing moderation surfaces plus race-safe per-guild case IDs; remaining
 M1 command and history hardening is in progress.
 
+M2 server logging: `[x]` per-guild settings, privacy, exempt channels, retention, and
+message/member/role/channel/voice/ban/unban listeners are implemented and tested.
+
 All Module D through K, M, N, and L work remains `[ ]` until implementation and testing.
 
 ## M12

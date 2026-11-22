@@ -64,6 +64,38 @@ Status: in progress
 Verification:
 
 ```text
+
+## M2 - Server logging
+
+Status: in progress
+
+### Starting scope
+
+- Add guild log settings, privacy settings, exemptions, and minimal retained records.
+- Add `/logs channel`, `/logs toggle`, `/logs privacy`, and `/logs exempt`.
+- Listen for message, member, role, channel, voice, and moderation events.
+- Keep message content opt-in and cap both storage and embeds.text
+
+### Implemented
+
+- Added `log_settings`, `log_privacy_settings`, and `log_records` migration/models.
+- Added a logging repository and privacy-conscious application service.
+- Added `/logs channel`, `/logs toggle`, `/logs privacy`, and `/logs exempt`.
+- Added Discord listeners for message, member, role, channel, voice, ban, and unban events.
+- Redis cache reads/writes degrade safely when Redis is unavailable.
+
+Verification:
+
+```text
+pytest -q:
+364 passed, 1 warning
+
+Ruff (M2 files):
+All checks passed
+
+Alembic:
+0021_m2_server_logging (head)
+```text
 pytest -q:
 359 passed, 1 warning
 

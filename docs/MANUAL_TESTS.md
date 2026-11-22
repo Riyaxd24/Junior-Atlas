@@ -25,3 +25,13 @@
 2. Test ban/kick/timeout hierarchy conflicts with the server owner, self, and a higher-role member.
 3. Add warnings, inspect `/warnings`, and confirm only active warning points are counted.
 4. Run `/clear` in a text channel and confirm purge limits and Manage Messages permissions.
+
+## M2
+
+1. Run `/logs channel` for message delete/edit and member join/leave events.
+2. Delete and edit messages, join/leave a member, update roles/channels, and verify embeds contain
+   IDs and timestamps.
+3. Enable message content logging, send a bot-authored message, and confirm its content is not
+   retained.
+4. Exempt a channel and confirm no log record or delivery occurs there.
+5. Set retention to a short period and run the cleanup path to confirm expired rows are removed.
