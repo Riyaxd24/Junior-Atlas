@@ -1,15 +1,22 @@
-from dataclasses import dataclass
-import os, uuid
-from dotenv import load_dotenv
-load_dotenv()
+from __future__ import annotations
 
-def _i(k,d):
-    try:return int(os.getenv(k,str(d)))
-    except ValueError:return d
+import os
+import uuid
+from typing import Literal
 
-def _b(k,d=False): return os.getenv(k,str(d)).lower() in {'1','true','yes','on'}
+from pydantic import AliasChoices, Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-def _f(k,d):
+def _i(k, d):
+    try:
+        return int(os.getenv(k, str(d)))
+    except ValueError:
+        return d
+
+def _b(k, d=False):
+    return os.getenv(k, str(d)).lower() in {'1', 'true', 'yes', 'on'}
+
+def _f(k, d):
     try:
         value = float(os.getenv(k, str(d)))
         return value if value == value and abs(value) != float('inf') else d
@@ -24,54 +31,118 @@ def normalize_database_url(url: str) -> str:
         return 'postgresql+asyncpg://' + url[len('postgresql://'):]
     return url
 
-@dataclass(frozen=True)
-class Settings:
-    log_level: str=os.getenv('LOG_LEVEL','INFO')
-    environment: str=os.getenv('ENVIRONMENT','development')
-    otel_enabled: bool=_b('OTEL_ENABLED',False)
-    otel_exporter_endpoint: str=os.getenv('OTEL_EXPORTER_OTLP_ENDPOINT','')
-    otel_service_name: str=os.getenv('OTEL_SERVICE_NAME','titan-discord-bot')
-    token:str=os.getenv('DISCORD_TOKEN','')
-    guild_id:int|None=_i('GUILD_ID',0) or None
-    command_prefix:str=','
-    database_url:str=normalize_database_url(os.getenv('DATABASE_URL','postgresql+asyncpg://bot:bot@localhost:5432/discordbot'))
-    redis_url:str=os.getenv('REDIS_URL','redis://localhost:6379/0')
-    redis_max_connections:int=_i('REDIS_MAX_CONNECTIONS',100)
-    cache_ttl_seconds:int=_i('CACHE_TTL_SECONDS',600)
-    redis_lock_ttl_ms:int=_i('REDIS_LOCK_TTL_MS',5000)
-    db_pool_size:int=_i('DB_POOL_SIZE',5)
-    db_max_overflow:int=_i('DB_MAX_OVERFLOW',5)
-    db_use_pgbouncer:bool=_b('DB_USE_PGBOUNCER',False)
-    db_pool_timeout:float=_f('DB_POOL_TIMEOUT',10.0)
-    db_pool_recycle:int=_i('DB_POOL_RECYCLE',1800)
-    db_statement_timeout_ms:int=_i('DB_STATEMENT_TIMEOUT_MS',5000)
-    metrics_host:str=os.getenv('METRICS_HOST','127.0.0.1')
-    metrics_port:int=_i('METRICS_PORT',9100)
-    health_port:int=_i('HEALTH_PORT',8080)
-    dashboard_host:str=os.getenv('DASHBOARD_HOST','127.0.0.1')
-    dashboard_port:int=_i('DASHBOARD_PORT',8081)
-    greeting_queue_size:int=_i('GREETING_QUEUE_SIZE',1000)
-    greeting_workers:int=_i('GREETING_WORKERS',4)
-    greeting_max_event_age:float=_f('GREETING_MAX_EVENT_AGE',30.0)
-    invite_join_queue_size:int=_i('INVITE_JOIN_QUEUE_SIZE',2000)
-    invite_stat_flush_interval:float=_f('INVITE_STAT_FLUSH_INTERVAL',1.0)
-    shard_count:int|None=_i('SHARD_COUNT',0) or None
-    shard_ids:str=os.getenv('SHARD_IDS','')
-    gateway_queue_size:int=_i('GATEWAY_QUEUE_SIZE',4096)
-    gateway_critical_queue_size:int=_i('GATEWAY_CRITICAL_QUEUE_SIZE',1024)
-    gateway_workers:int=_i('GATEWAY_WORKERS',8)
-    gateway_guild_concurrency:int=_i('GATEWAY_GUILD_CONCURRENCY',1)
-    gateway_max_event_age:float=_f('GATEWAY_MAX_EVENT_AGE',10.0)
-    shard_lease_ttl_ms:int=_i('SHARD_LEASE_TTL_MS',60000)
-    gateway_shutdown_timeout:float=_f('GATEWAY_SHUTDOWN_TIMEOUT',15.0)
-    gateway_dlq_maxsize:int=_i('GATEWAY_DLQ_MAXSIZE',2048)
-    instance_id:str=os.getenv('INSTANCE_ID',os.getenv('HOSTNAME',str(uuid.uuid4())))
-    public_base_url:str=os.getenv('PUBLIC_BASE_URL','http://localhost:8080')
-    dashboard_api_key:str=os.getenv('DASHBOARD_API_KEY','')
-    automod_heat_decay:float=_f('AUTOMOD_HEAT_DECAY',0.08)
-    automod_heat_ttl:int=_i('AUTOMOD_HEAT_TTL',900)
-    music_url:str=os.getenv('LAVALINK_URL','')
-    music_password:str=os.getenv('LAVALINK_PASSWORD','')
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file='.env',
+        env_file_encoding='utf-8',
+        case_sensitive=False,
+        extra='ignore',
+    )
+
+    discord_token: str = Field(
+        default='',
+        validation_alias=AliasChoices('DISCORD_TOKEN', 'discord_token'),
+    )
+    bot_owner_ids: list[int] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices('BOT_OWNER_IDS', 'bot_owner_ids'),
+    )
+    # Legacy-compatible fallback: command_prefix:str=','
+    command_prefix: str = Field(default=',')
+    database_url: str = Field(
+        default='postgresql+asyncpg://bot:bot@localhost:5432/discordbot'
+    )
+    redis_url: str = 'redis://localhost:6379/0'
+    log_level: str = 'INFO'
+    environment: Literal['development', 'staging', 'production'] = 'development'
+    guild_id: int | None = None
+    redis_max_connections: int = 100
+    cache_ttl_seconds: int = 600
+    redis_lock_ttl_ms: int = 5000
+    db_pool_size: int = 5
+    db_max_overflow: int = 5
+    db_use_pgbouncer: bool = False
+    db_pool_timeout: float = 10.0
+    db_pool_recycle: int = 1800
+    db_statement_timeout_ms: int = 5000
+    metrics_host: str = '127.0.0.1'
+    metrics_port: int = 9100
+    health_port: int = 8080
+    dashboard_host: str = '127.0.0.1'
+    dashboard_port: int = 8081
+    greeting_queue_size: int = 1000
+    greeting_workers: int = 4
+    greeting_max_event_age: float = 30.0
+    invite_join_queue_size: int = 2000
+    invite_stat_flush_interval: float = 1.0
+    shard_count: int | None = None
+    shard_ids: str = ''
+    gateway_queue_size: int = 4096
+    gateway_critical_queue_size: int = 1024
+    gateway_workers: int = 8
+    gateway_guild_concurrency: int = 1
+    gateway_max_event_age: float = 10.0
+    shard_lease_ttl_ms: int = 60000
+    gateway_shutdown_timeout: float = 15.0
+    gateway_dlq_maxsize: int = 2048
+    instance_id: str = Field(default_factory=lambda: os.getenv('HOSTNAME', str(uuid.uuid4())))
+    public_base_url: str = 'http://localhost:8080'
+    dashboard_api_key: str = ''
+    automod_heat_decay: float = 0.08
+    automod_heat_ttl: int = 900
+    music_url: str = Field(
+        default='',
+        validation_alias=AliasChoices('LAVALINK_URL', 'music_url'),
+    )
+    music_password: str = Field(
+        default='',
+        validation_alias=AliasChoices('LAVALINK_PASSWORD', 'music_password'),
+    )
+    otel_enabled: bool = False
+    otel_exporter_endpoint: str = Field(
+        default='',
+        validation_alias=AliasChoices(
+            'OTEL_EXPORTER_OTLP_ENDPOINT',
+            'otel_exporter_endpoint',
+        ),
+    )
+    otel_service_name: str = 'junior-atlas-bot'
+
+    @property
+    def token(self) -> str:
+        return self.discord_token
+
+    @field_validator('bot_owner_ids', mode='before')
+    @classmethod
+    def parse_bot_owner_ids(cls, value):
+        if isinstance(value, str):
+            return [int(item.strip()) for item in value.split(',') if item.strip()]
+        return value
+
+    @field_validator('database_url')
+    @classmethod
+    def normalize_database(cls, value: str) -> str:
+        return normalize_database_url(value)
+
+    @field_validator('guild_id', mode='before')
+    @classmethod
+    def normalize_guild_id(cls, value):
+        if value in (None, '', 0, '0'):
+            return None
+        return int(value)
+
+    @field_validator('log_level')
+    @classmethod
+    def normalize_log_level(cls, value: str) -> str:
+        return value.upper()
+
+    @field_validator('command_prefix')
+    @classmethod
+    def validate_command_prefix(cls, value: str) -> str:
+        prefix = value.strip()
+        if not prefix or len(prefix) > 5 or any(char.isspace() for char in prefix):
+            raise ValueError('COMMAND_PREFIX must be 1-5 characters with no whitespace')
+        return prefix
     @property
     def parsed_shard_ids(self):
         raw = self.shard_ids.strip()

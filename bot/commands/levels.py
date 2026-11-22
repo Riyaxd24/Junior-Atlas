@@ -323,7 +323,7 @@ class Levels(commands.GroupCog, name='level'):
             ephemeral=True,
         )
 
-    @app_commands.command(name='config', description='Alias for level settings')
+    @app_commands.command(name='leveling-config', description='Alias for level settings')
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(manage_guild=True)
     async def config(self, interaction: discord.Interaction):

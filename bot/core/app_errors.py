@@ -5,6 +5,10 @@ from discord import app_commands
 log = logging.getLogger("bot.commands")
 
 
+class PermissionDenied(Exception):
+    """Raised when a configured or Discord permission check fails."""
+
+
 def _message(error: app_commands.AppCommandError) -> str:
     if isinstance(error, app_commands.errors.MissingPermissions):
         return "You don't have permission to use this command."

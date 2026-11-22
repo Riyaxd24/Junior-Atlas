@@ -37,3 +37,15 @@ Status: in progress
 
 After destructive-operation approval, run the migration round trip and Stage 0 cleanup decisions,
 then commit Stage 0 and stop for milestone approval.
+
+## M0 - Foundation hardening
+
+Status: in progress
+
+### Starting scope
+
+- Replace the environment dataclass with Pydantic Settings validation.
+- Add the required environment settings and owner-ID parsing.
+- Pin dependencies and add ARQ.
+- Port the Junior Atlas theme, pagination, confirmation, and permission patterns.
+- Expand `/config` and central permission/error behavior.

@@ -1,10 +1,14 @@
 import discord
 
 COLOURS = {
-    'success': discord.Colour.green(),
-    'error': discord.Colour.red(),
-    'warning': discord.Colour.orange(),
-    'info': discord.Colour.blurple(),
+    'primary': discord.Colour(0x5865F2),
+    'dark': discord.Colour(0x202225),
+    'surface': discord.Colour(0x2B2D31),
+    'success': discord.Colour(0x3BA55D),
+    'warning': discord.Colour(0xFAA61A),
+    'error': discord.Colour(0xED4245),
+    'text': discord.Colour(0xF2F3F5),
+    'info': discord.Colour(0x5865F2),
     'moderation': discord.Colour.from_rgb(237, 93, 93),
     'security': discord.Colour.from_rgb(170, 62, 255),
 }
@@ -17,7 +21,7 @@ def _base(title: str, description: str, kind: str = 'info') -> discord.Embed:
         colour=COLOURS.get(kind, COLOURS['info']),
         timestamp=discord.utils.utcnow(),
     )
-    embed.set_footer(text='Fallen • Intelligent server protection')
+    embed.set_footer(text='Junior Atlas')
     return embed
 
 

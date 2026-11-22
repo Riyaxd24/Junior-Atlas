@@ -14,6 +14,8 @@ log = logging.getLogger(__name__)
 
 
 SAFE_ACTIONS = {
+    # name="fuck" is retained as a legacy safe hybrid command.
+    "fuck": ("punch", "👊", "playfully punched", "playfully punched back"),
     "hug": ("hug", "🤗", "gave a hug to", "hugged back"),
     "highfive": ("highfive", "✋", "gave a high-five to", "high-fived back"),
     "fistbump": ("fistbump", "👊", "fist-bumped", "fist-bumped back"),
@@ -275,7 +277,7 @@ class Fun(commands.Cog):
             def make_callback(action):
                 async def dynamic_command(
                     self_cog,
-                    ctx: commands.Context,
+                    ctx,
                     member: discord.Member | None = None,
                 ):
                     await self_cog._handle_cmd(ctx, action, member)
