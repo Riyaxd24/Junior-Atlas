@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from typing import ClassVar
 
 from arq import cron, run_worker
 from arq.connections import RedisSettings
@@ -8,7 +9,6 @@ from redis.asyncio import Redis
 from redis.exceptions import RedisError
 from sqlalchemy import delete, select, text
 from sqlalchemy.exc import SQLAlchemyError
-from typing import ClassVar
 
 from bot.core.config import settings
 from bot.core.db import Database
