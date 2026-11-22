@@ -1,7 +1,6 @@
 # Junior Atlas
 
-Junior Atlas is a modular, multi-guild Discord bot derived from
-[FALLEN](https://github.com/NOAH-NULL/FALLEN). It provides moderation, security,
+Junior Atlas is a modular, multi-guild Discord bot. It provides moderation, security,
 server logging, welcome/goodbye automation, verification, role management,
 tickets, economy, leveling, achievements, games, community features, voice
 utilities, music, ARQ background work, and operator health tooling.

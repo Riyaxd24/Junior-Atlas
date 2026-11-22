@@ -1,6 +1,6 @@
-# Fallen V16 capability matrix
+# Junior Atlas capability matrix
 
-Fallen V16 maintains a 100-entry capability catalog across nine domains. The catalog is not proof that every entry is implemented or safe to enable. Only capabilities listed in the runtime's implemented-feature allowlist should be treated as active; others remain planned/catalog-only.
+Junior Atlas maintains a 100-entry capability catalog across nine domains. The catalog is not proof that every entry is implemented or safe to enable. Only capabilities listed in the runtime's implemented-feature allowlist should be treated as active; others remain planned/catalog-only.
 
 See `docs/FEATURE_MATRIX.md` for the complete 1–100 list and `docs/ARCHITECTURE.md` for implementation boundaries.
 
