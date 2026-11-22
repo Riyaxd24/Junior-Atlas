@@ -1,4 +1,4 @@
-# TITAN V16 implementation rules
+# Junior Atlas implementation rules
 
 ## Command-count target
 
