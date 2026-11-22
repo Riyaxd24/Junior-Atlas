@@ -1,6 +1,6 @@
 # Junior Atlas Specification
 
-Junior Atlas evolves the FALLEN base into a production-ready, modular, multi-server Discord
+Junior Atlas evolves into a production-ready, modular, multi-server Discord
 bot. The governing specification supplied for this repository defines stack, architecture,
 security, module, testing, Docker, documentation, and milestone requirements.
 

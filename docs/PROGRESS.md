@@ -55,6 +55,16 @@ Status: implementation complete
 
 ## M4 - Welcome, verification, and roles
 
+Status: checkpoint complete
+
+- Preserved existing welcome/goodbye engine and rules-panel role controls.
+- Added verification, role-menu, role-menu-item, and temporary-role models.
+- Added migration `0023_m4_roles_verification`.
+- Added persistent verification and role-select views plus temporary-role expiry service.
+- Verification: 373 tests passed, 1 warning.
+
+## M4 - Welcome, verification, and roles
+
 Status: in progress
 
 ### Starting scope

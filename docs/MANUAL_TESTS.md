@@ -44,3 +44,10 @@
    alone is ignored.
 3. Configure allow and deny link domains and verify the allow rule takes precedence.
 4. Configure a timeout escalation and confirm a member is never acted on above the bot's role.
+
+## M4
+
+1. Post a verification panel and confirm the verified role is below the bot's highest role.
+2. Accept verification and confirm only one role is added and repeated clicks remain safe.
+3. Create a role menu and confirm role additions/removals honor exclusivity and hierarchy.
+4. Assign a temporary role and confirm it is removed after the configured expiry.

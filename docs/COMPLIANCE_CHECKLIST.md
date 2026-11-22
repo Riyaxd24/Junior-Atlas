@@ -38,6 +38,10 @@ message/member/role/channel/voice/ban/unban listeners are implemented and tested
 M3 AutoMod: `[~]` rule engine, `/automod` configuration, false-positive boundaries, exemptions,
 and escalation are implemented; broader integration and Redis sliding-window coverage continue.
 
+M4 welcome/verification/roles: `[~]` existing welcome/goodbye engine retained; verification,
+role-menu, and temporary-role persistence infrastructure is implemented, with slash surfaces
+consolidated to respect Discord's command limit.
+
 All Module D through K, M, N, and L work remains `[ ]` until implementation and testing.
 
 ## M12
