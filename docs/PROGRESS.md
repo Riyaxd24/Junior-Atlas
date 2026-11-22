@@ -81,6 +81,27 @@ Status: checkpoint complete
 - Preserved audit-log event timelines and lockdown/quarantine recovery.
 - Verification: 379 tests passed, 1 warning; M6 Ruff checks passed.
 
+## M7 - Economy
+
+Status: checkpoint complete
+
+- Added wallet/bank columns and an immutable economy transaction ledger.
+- Added shop and inventory schema with row-locked balance modifications.
+- Added pay idempotency, deposit/withdraw, work/weekly, and leaderboard services.
+- Migration: `0025_m7_economy_ledger`.
+- Verification: 382 tests passed, 1 warning; M7 Ruff checks passed.
+
+## M7 - Economy
+
+Status: in progress
+
+### Starting scope
+
+- Centralize wallet/bank balance changes with PostgreSQL row locks and an immutable ledger.
+- Add idempotency keys and duplicate-click protection.
+- Add pay, work, weekly, deposit, withdraw, shop, inventory, buy, sell, and leaderboard workflows.
+- Keep Redis cooldowns and degrade safely to database-backed fallbacks.
+
 ## M6 - Security and anti-nuke
 
 Status: in progress

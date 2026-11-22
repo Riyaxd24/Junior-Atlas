@@ -63,6 +63,8 @@ class Economy(Base):
     guild_id: Mapped[int]=mapped_column(BigInteger,index=True)
     user_id: Mapped[int]=mapped_column(BigInteger,index=True)
     balance: Mapped[int]=mapped_column(Integer,default=0)
+    wallet: Mapped[int]=mapped_column(Integer,default=0,nullable=False)
+    bank: Mapped[int]=mapped_column(Integer,default=0,nullable=False)
     daily_at: Mapped[datetime|None]=mapped_column(DateTime(timezone=True),nullable=True)
     __table_args__=(UniqueConstraint('guild_id','user_id'),)
 

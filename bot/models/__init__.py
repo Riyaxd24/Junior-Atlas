@@ -1,4 +1,5 @@
 from .automod import AutoModLog, AutoModMessageEvent
+from .economy import EconomyTransaction, ShopItem, UserInventory
 from .extended import (
     Economy,
     Giveaway,
@@ -42,6 +43,7 @@ __all__ = [
     "ConfigSnapshot",
     "CustomCommand",
     "Economy",
+    "EconomyTransaction",
     "FeatureRecord",
     "Giveaway",
     "GuildConfig",
@@ -64,12 +66,14 @@ __all__ = [
     "RoleMenuItem",
     "ScheduledAction",
     "SecurityEvent",
+    "ShopItem",
     "Suggestion",
     "TempRole",
     "Ticket",
     "TicketMessage",
     "TicketPanel",
     "TicketRecord",
+    "UserInventory",
     "VerificationSetting",
     "Warning",
 ]

@@ -67,3 +67,11 @@
    are never quarantined or locked down.
 3. Exercise rapid deletes with audit attribution and confirm quarantine/lockdown can be unlocked
    from the preserved snapshot.
+
+## M7
+
+1. Claim daily/work/weekly and confirm each reward is recorded once and cooldown prevents duplicate
+   clicks.
+2. Deposit and withdraw coins and confirm wallet and bank totals remain non-negative.
+3. Pay another member repeatedly with the same interaction and confirm no duplicate debit/credit.
+4. Inspect the economy leaderboard and transaction ledger after transfers.

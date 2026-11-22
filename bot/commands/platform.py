@@ -1,7 +1,11 @@
-import discord, random
+import random
+
+import discord
 from discord import app_commands
 from discord.ext import commands
-from bot.ui import info_embed, success_embed, error_embed
+
+from bot.ui import error_embed, info_embed, success_embed
+
 
 class Platform(commands.Cog):
     def __init__(self,bot): self.bot=bot
@@ -39,7 +43,7 @@ class Platform(commands.Cog):
         allowed=await self.bot.limiter.allow(f'daily:{interaction.guild.id}:{interaction.user.id}',1,86400)
         if not allowed:
             return await interaction.response.send_message(embed=error_embed('Daily already claimed', 'You can claim the daily reward again after the cooldown resets.'),ephemeral=True)
-        b=await self.bot.platform.change_balance(interaction.guild.id,interaction.user.id,100); embed=success_embed('Daily reward', f'You received **100 coins**.'); embed.add_field(name='New balance',value=f'**{b:,}**',inline=True); await interaction.response.send_message(embed=embed)
+        b=await self.bot.platform.change_balance(interaction.guild.id,interaction.user.id,100); embed=success_embed('Daily reward', 'You received **100 coins**.'); embed.add_field(name='New balance',value=f'**{b:,}**',inline=True); await interaction.response.send_message(embed=embed)
     @app_commands.command(name='coinflip',description='Flip a coin')
     @app_commands.guild_only()
     async def coinflip(self,interaction:discord.Interaction): await interaction.response.send_message(embed=info_embed('🪙 Coin flip', f'**{random.choice(("Heads","Tails"))}**'))

@@ -50,6 +50,10 @@ M6 security/anti-nuke: `[~]` destructive-action assessment, threshold/confidence
 trusted owner/admin exemptions, and quarantine/lockdown recovery remain implemented; Redis
 sliding windows and full event-stream confidence tuning continue.
 
+M7 economy: `[~]` existing balance/daily workflows plus wallet/bank migration, immutable
+transaction ledger, pay/transfer locking, idempotency, deposit/withdraw, work/weekly, and
+leaderboard services are implemented; shop inventory and Discord command surfaces continue.
+
 All Module D through K, M, N, and L work remains `[ ]` until implementation and testing.
 
 ## M12
