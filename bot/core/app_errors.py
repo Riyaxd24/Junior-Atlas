@@ -2,6 +2,8 @@ import logging
 import discord
 from discord import app_commands
 
+from bot.core.interactions import is_expired_interaction, safe_send
+
 log = logging.getLogger("bot.commands")
 
 
@@ -25,6 +27,12 @@ def _message(error: app_commands.AppCommandError) -> str:
 
 async def handle_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError) -> None:
     original = getattr(error, "original", error)
+    if is_expired_interaction(original) or is_expired_interaction(error):
+        log.debug(
+            "application interaction expired guild=%s",
+            getattr(interaction.guild, "id", None),
+        )
+        return
     if not isinstance(error, (app_commands.errors.MissingPermissions,
                               app_commands.errors.BotMissingPermissions,
                               app_commands.errors.CommandOnCooldown,
@@ -36,12 +44,4 @@ async def handle_app_command_error(interaction: discord.Interaction, error: app_
         )
     embed = discord.Embed(title="✕ Command failed", description=_message(error), colour=discord.Colour.red())
     embed.set_footer(text="Fallen • Try /help for command usage")
-    try:
-        if interaction.response.is_done():
-            await interaction.followup.send(embed=embed, ephemeral=True)
-        else:
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-    except discord.HTTPException:
-        log.warning("could not send application command error response", exc_info=True)
-    except Exception:
-        log.exception("unexpected failure while reporting application command error")
+    await safe_send(interaction, embed=embed, ephemeral=True)

@@ -2,6 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from bot.core.interactions import safe_defer, safe_send
 from bot.ui import info_embed, success_embed
 
 
@@ -266,8 +267,11 @@ class Levels(commands.GroupCog, name='level'):
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(manage_guild=True)
     async def xp_add(self, interaction: discord.Interaction, member: discord.Member, amount: app_commands.Range[int, 1, 1000000]):
+        if not await safe_defer(interaction, ephemeral=True):
+            return
         _, level, _xp, total = await self.bot.levels.modify_xp(interaction.guild.id, member.id, amount)
-        await interaction.response.send_message(
+        await safe_send(
+            interaction,
             embed=success_embed('XP added', f'{member.mention} received **{amount:,} XP**.\nLevel **{level}** · Total **{total:,} XP**.'),
             ephemeral=True,
         )
@@ -276,8 +280,11 @@ class Levels(commands.GroupCog, name='level'):
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(manage_guild=True)
     async def xp_remove(self, interaction: discord.Interaction, member: discord.Member, amount: app_commands.Range[int, 1, 1000000]):
+        if not await safe_defer(interaction, ephemeral=True):
+            return
         _, level, _xp, total = await self.bot.levels.modify_xp(interaction.guild.id, member.id, -amount)
-        await interaction.response.send_message(
+        await safe_send(
+            interaction,
             embed=success_embed('XP removed', f'{member.mention} lost **{amount:,} XP**.\nLevel **{level}** · Total **{total:,} XP**.'),
             ephemeral=True,
         )
@@ -286,8 +293,11 @@ class Levels(commands.GroupCog, name='level'):
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(manage_guild=True)
     async def xp_set(self, interaction: discord.Interaction, member: discord.Member, amount: app_commands.Range[int, 0, 10000000]):
+        if not await safe_defer(interaction, ephemeral=True):
+            return
         _, level, _xp, total = await self.bot.levels.modify_xp(interaction.guild.id, member.id, amount, set_value=True)
-        await interaction.response.send_message(
+        await safe_send(
+            interaction,
             embed=success_embed('XP set', f'{member.mention} now has **{total:,} total XP**.\nLevel **{level}**.'),
             ephemeral=True,
         )
