@@ -58,6 +58,9 @@ M8 leveling/achievements: `[~]` existing XP math, Redis cooldown, role rewards, 
 and rank-card data are retained; achievement definitions/unlocks and `/level achievements`
 are implemented.
 
+M9 games: `[~]` session/stat schema, tested Tic-Tac-Toe/RPS/trivia engines, timeout-safe Discord
+views, and `/engage` subcommands are implemented; remaining multiplayer games continue.
+
 All Module D through K, M, N, and L work remains `[ ]` until implementation and testing.
 
 ## M12

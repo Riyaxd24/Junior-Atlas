@@ -100,6 +100,26 @@ Status: checkpoint complete
 - Added `/level achievements` and automatic level/XP unlock evaluation.
 - Verification: 385 tests passed, 1 warning; M8 Ruff checks passed.
 
+## M9 - Games
+
+Status: checkpoint complete
+
+- Added game session/stat models and migration `0027_m9_games`.
+- Added tested Tic-Tac-Toe, RPS, and trivia engines.
+- Added timeout-safe Discord views under `/engage tictactoe`, `/engage rps`, and `/engage trivia`.
+- Verification: 392 tests passed, 1 warning; M9 Ruff checks passed.
+
+## M9 - Games
+
+Status: in progress
+
+### Starting scope
+
+- Add persisted game sessions and per-player/per-game statistics.
+- Add tested Tic-Tac-Toe, Rock-Paper-Scissors, and trivia engines/views.
+- Expose game commands under the existing `/engage` command group.
+- Preserve timeout-safe turn validation and no-gambling behavior.
+
 ## M8 - Leveling and achievements
 
 Status: in progress

@@ -81,3 +81,10 @@
 1. Send messages and confirm XP gains respect ignored channels/roles and cooldown.
 2. Cross a level threshold and confirm the level-up reward and achievement unlock occur once.
 3. Run `/level leaderboard`, `/level rank`, and `/level achievements` for a test member.
+
+## M9
+
+1. Start `/engage tictactoe` with a member and confirm only the two players can move.
+2. Confirm illegal and occupied moves are rejected and a three-in-a-row wins.
+3. Start `/engage rps` and confirm choices remain private until both players submit.
+4. Start `/engage trivia` and confirm correct/incorrect answers resolve once.

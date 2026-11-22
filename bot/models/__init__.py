@@ -11,6 +11,7 @@ from .extended import (
     Reminder,
     Suggestion,
 )
+from .games import GameSession, GameStats
 from .logging import LogPrivacySetting, LogRecord, LogSetting
 from .roles import RoleMenu, RoleMenuItem, TempRole, VerificationSetting
 from .schema import (
@@ -47,6 +48,8 @@ __all__ = [
     "Economy",
     "EconomyTransaction",
     "FeatureRecord",
+    "GameSession",
+    "GameStats",
     "Giveaway",
     "GuildConfig",
     "InviteStat",
