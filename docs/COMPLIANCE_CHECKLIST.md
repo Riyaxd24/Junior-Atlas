@@ -42,6 +42,10 @@ M4 welcome/verification/roles: `[~]` existing welcome/goodbye engine retained; v
 role-menu, and temporary-role persistence infrastructure is implemented, with slash surfaces
 consolidated to respect Discord's command limit.
 
+M5 tickets: `[~]` persistent panels/tickets/transcripts, open/claim/close/reopen transitions,
+and strict permission construction are implemented; add/remove/staff assignment and cleanup
+remain in progress.
+
 All Module D through K, M, N, and L work remains `[ ]` until implementation and testing.
 
 ## M12

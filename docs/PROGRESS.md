@@ -63,6 +63,26 @@ Status: checkpoint complete
 - Added persistent verification and role-select views plus temporary-role expiry service.
 - Verification: 373 tests passed, 1 warning.
 
+## M5 - Tickets
+
+Status: checkpoint complete
+
+- Added ticket panel, ticket, and transcript models with migration `0024_m5_tickets`.
+- Added persistent open/claim/close/reopen controls and strict ticket channel permission setup.
+- Replaced the extra top-level close command with controls on the ticket panel.
+- Verification: 375 tests passed, 1 warning; M5 migration reached head.
+
+## M5 - Tickets
+
+Status: in progress
+
+### Starting scope
+
+- Add persistent ticket panels, tickets, and transcript messages.
+- Add open/claimed/closed state transitions.
+- Add panel button opening, claim/unclaim, close/reopen, add/remove member controls.
+- Preserve strict channel permissions and transcript retention.
+
 ## M4 - Welcome, verification, and roles
 
 Status: in progress

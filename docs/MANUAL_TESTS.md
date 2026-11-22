@@ -51,3 +51,11 @@
 2. Accept verification and confirm only one role is added and repeated clicks remain safe.
 3. Create a role menu and confirm role additions/removals honor exclusivity and hierarchy.
 4. Assign a temporary role and confirm it is removed after the configured expiry.
+
+## M5
+
+1. Post a ticket panel and open a ticket; confirm only the creator, support role, and bot can
+   view it.
+2. Claim and close a ticket, then reopen it and confirm illegal transitions are rejected.
+3. Create a transcript and confirm message authors and content are stored without exposing
+   secrets or tokens.

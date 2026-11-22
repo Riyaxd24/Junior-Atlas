@@ -21,6 +21,7 @@ from .schema import (
     ReactionRole,
     Warning,
 )
+from .tickets import TicketMessage, TicketPanel, TicketRecord
 from .v16 import (
     AutoModRule,
     ConfigSnapshot,
@@ -66,6 +67,9 @@ __all__ = [
     "Suggestion",
     "TempRole",
     "Ticket",
+    "TicketMessage",
+    "TicketPanel",
+    "TicketRecord",
     "VerificationSetting",
     "Warning",
 ]
