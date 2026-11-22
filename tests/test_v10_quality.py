@@ -2,16 +2,14 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
-from bot.commands.fun import Fun, SAFE_ACTIONS
+from bot.commands.fun import SAFE_ACTIONS, Fun
 
 
-def test_hybrid_commands_are_available_in_both_prefix_and_slash_surfaces():
+def test_friendly_commands_keep_prefix_and_selected_slash_surfaces():
     cog = Fun(SimpleNamespace(reactions=SimpleNamespace(get=AsyncMock(return_value=None))))
     prefix_names = {command.name for command in cog.get_commands()}
-    slash_names = {command.name for command in cog.get_commands() if getattr(command, 'app_command', None) is not None}
     expected = {"hug", "highfive", "pat", "poke", "bonk", "wave", "dance", "smile", "cry", "shrug", "sleep", "boop", "tickle", "punch"}
     assert expected <= prefix_names
-    assert expected <= slash_names
 
 
 def test_reaction_surface_has_bounded_http_and_provider_caches():

@@ -5,7 +5,7 @@ import logging
 import os
 import random
 import time
-from typing import Dict, List, Optional, Set
+from typing import ClassVar
 
 import aiohttp
 
@@ -20,11 +20,12 @@ class ReactionGifService:
     TENOR_URL = 'https://tenor.googleapis.com/v2/search'
     OTAKU_GIFS_URL = 'https://api.otakugifs.xyz/gif'
 
-    ALIASES: Dict[str, str] = {
+    ALIASES: ClassVar[dict[str, str]] = {
         'fuck': 'punch',  # Keep the legacy command on a non-explicit reaction GIF
         'highfive': 'wave',
         'pat': 'pat',
         'bonk': 'punch',
+        'cuddle': 'hug',
         'poke': 'poke',
         'hug': 'hug',
         'wave': 'wave',
@@ -53,8 +54,8 @@ class ReactionGifService:
 
     def __init__(
         self,
-        giphy_api_key: Optional[str] = None,
-        tenor_api_key: Optional[str] = None,
+        giphy_api_key: str | None = None,
+        tenor_api_key: str | None = None,
         failure_ttl: float = 10.0,
         provider_cooldown: float = 60.0,
         max_pool_per_action: int = 50,
@@ -62,16 +63,16 @@ class ReactionGifService:
         self.giphy_api_key = giphy_api_key or os.getenv('GIPHY_API_KEY')
         self.tenor_api_key = tenor_api_key or os.getenv('TENOR_API_KEY')
 
-        self._session: Optional[aiohttp.ClientSession] = None
-        self._locks: Dict[str, asyncio.Lock] = {}
+        self._session: aiohttp.ClientSession | None = None
+        self._locks: dict[str, asyncio.Lock] = {}
 
         # Caching and pools
-        self._failure_cache: Dict[str, float] = {}       # action -> failed_at timestamp
-        self._gif_pool: Dict[str, Dict[str, None]] = {}  # action -> insertion-ordered dict (ordered set)
-        self._gif_used: Dict[str, Set[str]] = {}          # action -> set of used URLs
+        self._failure_cache: dict[str, float] = {}       # action -> failed_at timestamp
+        self._gif_pool: dict[str, dict[str, None]] = {}  # action -> insertion-ordered dict (ordered set)
+        self._gif_used: dict[str, set[str]] = {}          # action -> set of used URLs
 
         # Provider health tracking (Circuit Breaker)
-        self._provider_backoff: Dict[str, float] = {}   # provider_name -> block_until_timestamp
+        self._provider_backoff: dict[str, float] = {}   # provider_name -> block_until_timestamp
 
         # Configuration
         self._failure_ttl = failure_ttl
@@ -106,7 +107,7 @@ class ReactionGifService:
         self._provider_backoff[provider_name] = now + self._provider_cooldown
         log.warning("Provider %s suspended for %ss due to errors/timeouts", provider_name, self._provider_cooldown)
 
-    async def _from_giphy(self, action: str) -> List[str]:
+    async def _from_giphy(self, action: str) -> list[str]:
         if not self.giphy_api_key or not self._session:
             return []
         try:
@@ -129,7 +130,7 @@ class ReactionGifService:
             log.debug("Giphy fetch failed for action %s: %s", action, exc)
             raise
 
-    async def _from_tenor(self, action: str) -> List[str]:
+    async def _from_tenor(self, action: str) -> list[str]:
         if not self.tenor_api_key or not self._session:
             return []
         try:
@@ -153,7 +154,7 @@ class ReactionGifService:
             log.debug("Tenor fetch failed for action %s: %s", action, exc)
             raise
 
-    async def _from_otakugifs(self, action: str) -> List[str]:
+    async def _from_otakugifs(self, action: str) -> list[str]:
         if not self._session:
             return []
         try:
@@ -167,7 +168,7 @@ class ReactionGifService:
             log.debug("OtakuGIFs fetch failed for action %s: %s", action, exc)
             raise
 
-    async def _fetch_all_providers(self, action_key: str, now: float) -> List[str]:
+    async def _fetch_all_providers(self, action_key: str, now: float) -> list[str]:
         """Fetch candidates in parallel from all healthy providers."""
         providers = [
             ('otakugifs', self._from_otakugifs),
@@ -187,7 +188,7 @@ class ReactionGifService:
             return []
 
         results = await asyncio.gather(*active_tasks, return_exceptions=True)
-        combined_urls: List[str] = []
+        combined_urls: list[str] = []
 
         for name, res in zip(task_providers, results):
             if isinstance(res, Exception):
@@ -197,7 +198,7 @@ class ReactionGifService:
 
         return combined_urls
 
-    async def get(self, action: str) -> Optional[str]:
+    async def get(self, action: str) -> str | None:
         """Resolve a high-quality reaction GIF URL prioritizing newly fetched results."""
         action_lower = action.lower()
         action_key = self.ALIASES.get(action_lower, action_lower)

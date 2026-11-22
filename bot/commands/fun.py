@@ -21,6 +21,7 @@ SAFE_ACTIONS = {
     "pat": ("pat", "🫳", "gave a friendly pat to", "patted back"),
     "poke": ("poke", "👉", "poked", "poked back"),
     "bonk": ("bonk", "🔨", "bonked", "bonked back"),
+    "cuddle": ("cuddle", "🫂", "cuddled", "cuddled back"),
     "wave": ("wave", "👋", "waved at", "waved back at"),
     "dance": ("dance", "💃", "started dancing with", "danced along with"),
     "smile": ("smile", "😊", "shared a smile with", "smiled back"),
@@ -600,22 +601,22 @@ class Fun(commands.Cog):
             raise error
 
 
+def make_action_slash_callback(cog, action):
+    async def slash_callback(
+        interaction: discord.Interaction,
+        member: discord.Member | None = None,
+    ):
+        await cog._handle_cmd(interaction, action, member)
+
+    slash_callback.__name__ = action
+    return slash_callback
+
+
 async def setup(bot):
     await bot.add_cog(Fun(bot))
-    for action_name in SAFE_ACTIONS:
-        if action_name == "fuck":
-            continue
-
-        def make_slash_callback(action):
-            async def slash_callback(
-                interaction: discord.Interaction,
-                member: discord.Member | None = None,
-            ):
-                await bot.get_cog("Fun")._handle_cmd(interaction, action, member)
-            return slash_callback
-
-        slash_callback = make_slash_callback(action_name)
-        slash_callback.__name__ = action_name
+    cog = bot.get_cog("Fun")
+    for action_name in ("hug", "pat", "poke", "bonk", "slap", "cuddle", "wave", "highfive"):
+        slash_callback = make_action_slash_callback(cog, action_name)
         slash_command = discord.app_commands.Command(
             name=action_name,
             description=f"Playfully {action_name} someone",
