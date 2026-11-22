@@ -287,13 +287,11 @@ class Fun(commands.Cog):
             callback = make_callback(action_name)
             callback.__name__ = action_name
             callback.__doc__ = f"Playfully {action_name} someone"
-
-            hybrid_cmd = commands.hybrid_command(
+            prefix_cmd = commands.command(
                 name=action_name,
                 description=f"Playfully {action_name} someone",
             )(callback)
-
-            cog_commands.append(hybrid_cmd)
+            cog_commands.append(prefix_cmd)
 
         self.__cog_commands__ = cog_commands
 
@@ -604,3 +602,23 @@ class Fun(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(Fun(bot))
+    for action_name in SAFE_ACTIONS:
+        if action_name == "fuck":
+            continue
+
+        def make_slash_callback(action):
+            async def slash_callback(
+                interaction: discord.Interaction,
+                member: discord.Member | None = None,
+            ):
+                await bot.get_cog("Fun")._handle_cmd(interaction, action, member)
+            return slash_callback
+
+        slash_callback = make_slash_callback(action_name)
+        slash_callback.__name__ = action_name
+        slash_command = discord.app_commands.Command(
+            name=action_name,
+            description=f"Playfully {action_name} someone",
+            callback=slash_callback,
+        )
+        bot.tree.add_command(slash_command)

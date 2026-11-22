@@ -4,10 +4,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from bot.commands.fun import Fun, SAFE_ACTIONS
+from bot.commands.fun import SAFE_ACTIONS, Fun
 from bot.commands.text import TextCommands
 from bot.services.reactions import ReactionGifService
-
 
 EXPECTED_ACTIONS = (
     "hug", "highfive", "fistbump", "pat", "poke", "bonk", "wave",
@@ -25,9 +24,7 @@ def test_prefix_is_comma_only():
 def test_social_actions_are_registered_as_hybrid_commands():
     cog = Fun(SimpleNamespace(reactions=SimpleNamespace(get=AsyncMock(return_value=None))))
     prefix_names = {command.name for command in cog.get_commands()}
-    slash_names = {command.name for command in cog.get_commands() if getattr(command, 'app_command', None) is not None}
     assert set(EXPECTED_ACTIONS) <= prefix_names
-    assert set(EXPECTED_ACTIONS) <= slash_names
 
 
 def test_legacy_fuck_action_remains_registered_with_safe_reaction():

@@ -2,7 +2,7 @@
 
 import pytest
 
-from bot.core.bot import Bot, EXTENSIONS
+from bot.core.bot import EXTENSIONS, Bot
 from bot.core.config import Settings
 
 
@@ -50,6 +50,13 @@ async def test_critical_slash_and_prefix_command_surfaces_are_registered():
             "edit", "toggle", "embed", "color", "image", "preview",
             "test", "channel", "roles", "reset", "status",
         } <= greeting_children
+
+        for name in ("hug", "pat", "poke", "bonk", "slap", "cuddle", "wave", "highfive"):
+            command = slash[name]
+            parameter_names = {parameter.name for parameter in command.parameters}
+            assert "ctx" not in parameter_names
+            assert "interaction" not in parameter_names
+            assert parameter_names <= {"member"}
 
         expected_prefix = {
             "help", "uwuify", "invites", "inviteleaderboard", "fuck",
