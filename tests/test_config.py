@@ -1,4 +1,6 @@
 from bot.core.config import Settings
+
+
 def test_settings(monkeypatch):
     monkeypatch.setenv('DISCORD_TOKEN','abcdefghij123456'); monkeypatch.setenv('DATABASE_URL','postgresql+asyncpg://x:y@localhost/x'); s=Settings(); assert s.db_pool_size==5 and s.db_max_overflow==5
 
@@ -34,9 +36,23 @@ def test_shard_ids_parse_valid_values(raw, expected):
 @pytest.mark.parametrize("raw", ["1,,2", ",1", "1,", "abc", "-1", "1,1"])
 def test_shard_ids_reject_malformed_or_unsafe_values(raw):
     with pytest.raises(ValueError, match="SHARD_IDS"):
-        Settings(shard_ids=raw).parsed_shard_ids
+        _ = Settings(shard_ids=raw).parsed_shard_ids
 
 
 def test_shard_ids_must_fit_configured_shard_count():
     with pytest.raises(ValueError, match="SHARD_COUNT"):
-        Settings(shard_count=2, shard_ids="0,2").parsed_shard_ids
+        _ = Settings(shard_count=2, shard_ids="0,2").parsed_shard_ids
+
+
+def test_bot_owner_ids_parse_csv(monkeypatch):
+    monkeypatch.setenv("BOT_OWNER_IDS", "123, 456")
+    settings = Settings()
+    assert settings.bot_owner_ids == [123, 456]
+
+
+def test_settings_validate_log_level_and_environment(monkeypatch):
+    monkeypatch.setenv("LOG_LEVEL", "debug")
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    settings = Settings()
+    assert settings.log_level == "DEBUG"
+    assert settings.environment == "production"

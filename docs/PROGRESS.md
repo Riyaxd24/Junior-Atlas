@@ -49,3 +49,30 @@ Status: in progress
 - Pin dependencies and add ARQ.
 - Port the Junior Atlas theme, pagination, confirmation, and permission patterns.
 - Expand `/config` and central permission/error behavior.
+
+### M0 completed
+
+- Added Pydantic Settings validation and required environment variables.
+- Pinned and compiled mutually compatible Python dependencies.
+- Added ARQ 0.26.3; Redis aligned to redis-py 5.3.1.
+- Added `/config` slash commands for show, prefix, moderation log, and moderation role.
+- Added a guild settings migration with `mod_role_id` and `timezone`.
+- Ported the Junior Atlas theme palette, embed, paginator, confirmation, and permission patterns.
+- Preserved guild-config Redis fallback and invalidation behavior.
+- Restored the legacy `fuck` command registration safely with a punch GIF key.
+
+Verification:
+
+```text
+pytest -q:
+359 passed, 1 warning
+
+Alembic:
+0019_m0_guild_settings (head)
+
+PostgreSQL public tables:
+25
+
+Redis ping:
+PONG
+```

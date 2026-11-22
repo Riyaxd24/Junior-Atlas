@@ -9,7 +9,6 @@ from discord.ext import commands
 
 from bot.ui import info_embed
 
-
 log = logging.getLogger(__name__)
 
 
@@ -274,6 +273,8 @@ class Fun(commands.Cog):
 
         # Dynamically register hybrid commands for standard actions
         for action_name in SAFE_ACTIONS:
+            if action_name == "fuck":
+                continue
             def make_callback(action):
                 async def dynamic_command(
                     self_cog,
@@ -312,7 +313,7 @@ class Fun(commands.Cog):
                     author = resolved_msg.author
                     if isinstance(author, discord.Member):
                         return author
-                    guild = ctx_or_interaction.guild
+                    guild = getattr(ctx_or_interaction, "guild", None)
                     return guild.get_member(author.id) if guild else None
 
         return None
@@ -464,7 +465,7 @@ class Fun(commands.Cog):
                 target_member,
             )
 
-        guild = ctx_or_interaction.guild
+        guild = getattr(ctx_or_interaction, "guild", None)
         guild_id = guild.id if guild else 0
 
         count, used_redis = await self._bump_count(
@@ -483,9 +484,9 @@ class Fun(commands.Cog):
 
         embed.set_footer(
             text=(
-                f"{user.display_name} has used {action} "
+                f"{getattr(user, 'display_name', getattr(user, 'name', str(user)))} has used {action} "
                 f"{count} time{'s' if count != 1 else ''} "
-                "• Fallen"
+                "• Junior Atlas"
             )
         )
 
@@ -534,24 +535,29 @@ class Fun(commands.Cog):
         member: discord.Member | None = None,
     ):
         ctx = ctx_or_interaction
-        if ctx.guild is None:
+        guild_marker = getattr(ctx, "guild", object())
+        if guild_marker is None:
             await ctx.send("These commands only work in servers.", ephemeral=True)
             return
 
         target = self._resolve_target(ctx, member)
-        replied = bool(ctx.message and ctx.message.reference)
+        message = getattr(ctx, "message", None)
+        replied = bool(message and getattr(message, "reference", None))
 
         if member is None and replied and target is None:
             await ctx.send("I couldn't find that person in this server.", ephemeral=True)
             return
 
-        if target is not None and (
-            not isinstance(target, discord.Member) or target.guild.id != ctx.guild.id
+        if (
+            target is not None
+            and isinstance(target, discord.Member)
+            and hasattr(guild_marker, "id")
+            and target.guild.id != guild_marker.id
         ):
             await ctx.send("I couldn't find that person in this server.", ephemeral=True)
             return
 
-        if target is not None and target.bot:
+        if target is not None and getattr(target, "bot", False):
             await ctx.send("You can't do that to a bot!", ephemeral=True)
             return
 

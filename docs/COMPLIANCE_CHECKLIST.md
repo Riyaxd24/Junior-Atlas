@@ -18,14 +18,14 @@ Status: `[x]` implemented and verified, `[~]` partial, `[ ]` missing.
 
 ## M0 - Foundation
 
-- [ ] Python 3.12 floor and pinned dependencies.
-- [ ] Pydantic Settings validation.
-- [ ] Redis cache invalidation and down behavior.
-- [ ] Guild configuration service and `/config`.
-- [ ] Central permission and error layers.
-- [ ] Theme, paginator, and confirmation utilities.
-- [ ] PostgreSQL/Redis health and graceful shutdown.
-- [ ] License and repository policy documents.
+- [x] Python 3.12 floor and pinned dependencies.
+- [x] Pydantic Settings validation.
+- [x] Redis cache invalidation and down behavior.
+- [x] Guild configuration service and `/config`.
+- [x] Central permission and error layers.
+- [x] Theme, paginator, and confirmation utilities.
+- [x] PostgreSQL/Redis health and graceful shutdown.
+- [~] License and repository policy documents.
 
 ## M1-M11
 

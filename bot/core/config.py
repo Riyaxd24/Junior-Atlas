@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import os
 import uuid
-from typing import Literal
+from math import isfinite
+from typing import Annotated, Literal
 
 from pydantic import AliasChoices, Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+
 
 def _i(k, d):
     try:
@@ -19,7 +21,7 @@ def _b(k, d=False):
 def _f(k, d):
     try:
         value = float(os.getenv(k, str(d)))
-        return value if value == value and abs(value) != float('inf') else d
+        return value if isfinite(value) else d
     except (TypeError, ValueError):
         return d
 
@@ -41,9 +43,9 @@ class Settings(BaseSettings):
 
     discord_token: str = Field(
         default='',
-        validation_alias=AliasChoices('DISCORD_TOKEN', 'discord_token'),
+        validation_alias=AliasChoices('DISCORD_TOKEN', 'discord_token', 'token'),
     )
-    bot_owner_ids: list[int] = Field(
+    bot_owner_ids: Annotated[list[int], NoDecode] = Field(
         default_factory=list,
         validation_alias=AliasChoices('BOT_OWNER_IDS', 'bot_owner_ids'),
     )

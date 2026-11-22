@@ -31,7 +31,7 @@ class Prefix(commands.Cog):
         if not prefix or len(prefix) > 5 or any(char.isspace() for char in prefix):
             await ctx.send("Choose a prefix between 1 and 5 characters with no spaces.")
             return
-        if prefix.startswith("<@") or prefix.startswith("<#"):
+        if prefix.startswith(("<@", "<#")):
             await ctx.send("Mentions cannot be used as a command prefix.")
             return
         await self.bot.guild_config.update(ctx.guild.id, command_prefix=prefix)
