@@ -1,10 +1,10 @@
+import collections
 import math
 import re
 import time
-import collections
 
-URL_RE = re.compile(r'(https?://|www\.)', re.I)
-INVITE_RE = re.compile(r'(discord(?:\.gg|(?:app)?\.com/invite)/|bit\.ly/|tinyurl\.com/)', re.I)
+URL_RE = re.compile(r'(https?://|www\.)', re.IGNORECASE)
+INVITE_RE = re.compile(r'(discord(?:\.gg|(?:app)?\.com/invite)/|bit\.ly/|tinyurl\.com/)', re.IGNORECASE)
 
 HEAT_WEIGHTS = {
     'spam': 10.0,

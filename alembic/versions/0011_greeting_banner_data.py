@@ -1,5 +1,6 @@
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
 
 revision = '0011_greeting_banner_data'
 down_revision = '0010_warning_expiration'

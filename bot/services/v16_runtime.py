@@ -1,7 +1,10 @@
 from __future__ import annotations
-import re, time
+
+import re
+import time
 from collections import defaultdict, deque
 from urllib.parse import urlparse
+
 import regex as safe_regex
 
 
@@ -97,9 +100,8 @@ class V16Runtime:
 
         if settings.get('flood_detection') and len(q) > 6:
             reasons.append('flood')
-        if settings.get('duplicate_messages') and len(content) > 3:
-            if sum(1 for _, c in cq if c == content) >= 3:
-                reasons.append('duplicate')
+        if settings.get('duplicate_messages') and len(content) > 3 and sum(1 for _, c in cq if c == content) >= 3:
+            reasons.append('duplicate')
         if settings.get('emoji_spam') and len(re.findall(r'<a?:\w+:\d+>|[\U0001F300-\U0001FAFF]', content)) >= 12:
             reasons.append('emoji_spam')
         if settings.get('mention_spam') and len(message.mentions) + len(message.role_mentions) >= 8:

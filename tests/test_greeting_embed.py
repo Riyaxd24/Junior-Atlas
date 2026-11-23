@@ -1,19 +1,18 @@
 import base64
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from io import BytesIO
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
 import discord
+import pytest
 from PIL import Image
 
 from bot.commands.greeting import Greeting
-from bot.commands.text import TextCommands
 from bot.commands.greeting_prefix import GreetingPrefix
-from bot.services.guild_config import GuildConfigService
 from bot.services.greeting import GreetingRenderer
+from bot.services.guild_config import GuildConfigService
 from bot.workers.greetings import GreetingWorker
 
 
@@ -89,7 +88,7 @@ def test_static_card_is_png_and_animated_background_stays_gif():
 
 def test_stored_banner_bytes_are_safe_for_json_cache():
     service = GuildConfigService(SimpleNamespace(), SimpleNamespace())
-    created_at = datetime(2026, 10, 2, tzinfo=timezone.utc)
+    created_at = datetime(2026, 10, 2, tzinfo=UTC)
     encoded = service._cache_safe({'welcome_background_data': b'GIF89a', 'created_at': created_at})
 
     # Binary greeting media is intentionally excluded from the Redis JSON cache.
@@ -349,7 +348,7 @@ def test_worker_uses_saved_custom_image_and_footer_options():
     )
     member = SimpleNamespace(
         id=7, guild=guild, mention="<@7>", display_name="Member", name="member",
-        created_at=datetime(2026, 1, 1, tzinfo=timezone.utc), joined_at=None,
+        created_at=datetime(2026, 1, 1, tzinfo=UTC), joined_at=None,
         display_avatar=SimpleNamespace(url="https://example.com/avatar.png"),
     )
     worker = GreetingWorker(SimpleNamespace())

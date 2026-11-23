@@ -35,12 +35,25 @@ from bot.services.uwuify import UwuifyService
 from bot.services.v16_runtime import V16Runtime
 from bot.services.welcome_engine import WelcomeEngine
 from bot.ui import info_embed
-from bot.web.api import DashboardAPI
 from bot.workers.gateway import GatewayWorkerPool
 from bot.workers.greetings import GreetingWorker
 from bot.workers.scheduler import Scheduler
 
 log=logging.getLogger('bot')
+# Pre-rebrand name is retained only so members quarantined by an older release
+# can still be found and restored. New roles use QUARANTINE_ROLE_NAME.
+QUARANTINE_ROLE_NAME = 'Junior Atlas Quarantine'
+LEGACY_QUARANTINE_ROLE_NAMES = ('Fallen Quarantine',)
+
+
+def find_quarantine_role(guild):
+    for name in (QUARANTINE_ROLE_NAME, *LEGACY_QUARANTINE_ROLE_NAMES):
+        role = discord.utils.get(guild.roles, name=name)
+        if role is not None:
+            return role
+    return None
+
+
 EXTENSIONS=('bot.commands.greeting','bot.commands.greeting_prefix','bot.commands.rules','bot.commands.moderation','bot.commands.logging','bot.commands.automod','bot.commands.roles','bot.commands.fun','bot.commands.utility','bot.commands.invites','bot.commands.music','bot.commands.admin','bot.commands.community','bot.commands.custom','bot.commands.tickets','bot.commands.platform','bot.commands.control','bot.commands.engagement','bot.commands.security','bot.commands.text','bot.commands.help','bot.commands.prefix','bot.commands.extreme','bot.commands.levels')
 class Bot(commands.AutoShardedBot):
     @staticmethod
@@ -73,7 +86,13 @@ class Bot(commands.AutoShardedBot):
         self.limiter=DistributedRateLimiter(self.cache); self.guild_config=GuildConfigService(self.db,self.cache,settings.cache_ttl_seconds,settings.redis_lock_ttl_ms)
         self.welcome_engine=WelcomeEngine(self)
         self.greetings=GreetingRenderer(); self.music=MusicService(self,settings.music_url,settings.music_password); self.greeting_worker=GreetingWorker(self,settings.greeting_queue_size,settings.greeting_workers,settings.greeting_max_event_age)
-        self.invalidation=CacheInvalidationSubscriber(self.cache); self.scheduler=Scheduler(self); self.dashboard=DashboardAPI(self,settings.dashboard_host,settings.dashboard_port)
+        self.invalidation=CacheInvalidationSubscriber(self.cache); self.scheduler=Scheduler(self)
+        # Dashboard development is deferred. Keep the implementation importable
+        # for future work, but never start it as part of normal bot startup.
+        self.dashboard = None
+        if settings.dashboard_enabled:
+            from bot.web.api import DashboardAPI
+            self.dashboard = DashboardAPI(self, settings.dashboard_host, settings.dashboard_port)
         self.automod=AutoModService(self.cache, settings.automod_heat_decay, settings.automod_heat_ttl); self.custom_commands=CustomCommandService(self.db,self.cache); self.levels=LevelService(self.db); self.tickets=TicketService(); self.platform=PlatformService(self.db); self.extreme=ExtremeService(self.db); self.v16=V16Runtime(self);                 self.antiraid=AntiRaid(self.cache); self.anti_nuke=AntiNukeService(); self.achievements=AchievementService(self.db); self.reactions=ReactionGifService(); self.uwuify=UwuifyService(self.cache); self.invites=InviteTracker(self.db,self.cache,settings.invite_join_queue_size,settings.invite_stat_flush_interval,bot=self)
         self.gateway_queue=GatewayEventQueue(settings.gateway_queue_size, settings.gateway_critical_queue_size); self.gateway_workers=GatewayWorkerPool(self,self.gateway_queue,settings.gateway_workers,settings.gateway_guild_concurrency,settings.gateway_max_event_age,settings.gateway_dlq_maxsize)
         self.shard_leases=ShardLeaseManager(self.cache, settings.instance_id, settings.shard_lease_ttl_ms); self.shard_leases.bind_shutdown(self.close); self.db.set_fence_guard(self.shard_leases.validate_fence)
@@ -127,7 +146,7 @@ class Bot(commands.AutoShardedBot):
         # False without blocking Discord gateway startup.
         music_ready = await self.music.start()
         if not music_ready:
-            log.warning("FALLEN is continuing without music; Discord bot startup is independent of Lavalink")
+            log.warning("Junior Atlas is continuing without music; Discord bot startup is independent of Lavalink")
 
         await self.greetings.start()
         await self.reactions.start()
@@ -136,7 +155,14 @@ class Bot(commands.AutoShardedBot):
         await self.gateway_workers.start()
         await self.invalidation.start()
         await self.scheduler.start()
-        await self.dashboard.start()
+        if self.dashboard is not None:
+            await self.dashboard.start()
+            log.warning(
+                "Dashboard API started because DASHBOARD_ENABLED=true; "
+                "dashboard support is deferred and not part of the supported runtime."
+            )
+        else:
+            log.info("Dashboard API disabled; bot runtime does not require dashboard credentials.")
         for ext in EXTENSIONS:
             await self.load_extension(ext)
             log.info("loaded command extension=%s", ext)
@@ -385,11 +411,11 @@ class Bot(commands.AutoShardedBot):
                     colour=colour,
                     hoist=bool(data.get("hoist", False)),
                     mentionable=bool(data.get("mentionable", False)),
-                    reason="Fallen anti-nuke restoration",
+                    reason="Junior Atlas anti-nuke restoration",
                 )
                 try:
                     target_position = max(1, min(int(data.get("position", 1)), guild.me.top_role.position - 1))
-                    await role.edit(position=target_position, reason="Fallen anti-nuke restoration")
+                    await role.edit(position=target_position, reason="Junior Atlas anti-nuke restoration")
                 except (discord.HTTPException, TypeError, ValueError):
                     pass
                 return role
@@ -410,19 +436,19 @@ class Bot(commands.AutoShardedBot):
             if channel_type == "CategoryChannel":
                 return await guild.create_category(
                     name, position=position, overwrites=overwrites,
-                    reason="Fallen anti-nuke restoration",
+                    reason="Junior Atlas anti-nuke restoration",
                 )
             if channel_type == "VoiceChannel":
                 return await guild.create_voice_channel(
                     name, category=category, position=position, overwrites=overwrites,
                     bitrate=int(data.get("bitrate") or 64000),
                     user_limit=int(data.get("user_limit") or 0),
-                    reason="Fallen anti-nuke restoration",
+                    reason="Junior Atlas anti-nuke restoration",
                 )
             if channel_type == "StageChannel":
                 return await guild.create_stage_channel(
                     name, category=category, position=position, overwrites=overwrites,
-                    reason="Fallen anti-nuke restoration",
+                    reason="Junior Atlas anti-nuke restoration",
                 )
             if channel_type == "TextChannel":
                 # Announcement channels need their original channel type; do not
@@ -441,7 +467,7 @@ class Bot(commands.AutoShardedBot):
                     nsfw=bool(data.get("nsfw", False)),
                     slowmode_delay=max(0, int(data.get("slowmode_delay") or 0)),
                     overwrites=overwrites,
-                    reason="Fallen anti-nuke restoration",
+                    reason="Junior Atlas anti-nuke restoration",
                 )
 
             log.warning(
@@ -485,7 +511,7 @@ class Bot(commands.AutoShardedBot):
                     colour=discord.Colour(data.get("colour", role.colour.value)),
                     hoist=data.get("hoist", role.hoist),
                     mentionable=data.get("mentionable", role.mentionable),
-                    reason="Fallen anti-nuke restoration",
+                    reason="Junior Atlas anti-nuke restoration",
                 )
                 restored["roles"] += 1
             except discord.HTTPException:
@@ -501,7 +527,7 @@ class Bot(commands.AutoShardedBot):
             try:
                 await guild.edit_role_positions(
                     positions=role_positions,
-                    reason="Fallen anti-nuke restoration",
+                    reason="Junior Atlas anti-nuke restoration",
                 )
             except discord.HTTPException:
                 pass
@@ -537,7 +563,7 @@ class Bot(commands.AutoShardedBot):
                 await channel.edit(
                     name=data.get("name", channel.name),
                     position=data.get("position", channel.position),
-                    reason="Fallen anti-nuke restoration",
+                    reason="Junior Atlas anti-nuke restoration",
                 )
             except discord.HTTPException:
                 pass
@@ -558,7 +584,7 @@ class Bot(commands.AutoShardedBot):
                     await channel.set_permissions(
                         target,
                         overwrite=overwrite,
-                        reason="Fallen anti-nuke restoration",
+                        reason="Junior Atlas anti-nuke restoration",
                     )
                     restored["channels"] += 1
                 except (discord.HTTPException, discord.Forbidden):
@@ -618,13 +644,17 @@ class Bot(commands.AutoShardedBot):
             )
         return restored
 
-    async def quarantine_member(self, guild, member, reason="Fallen anti-nuke quarantine"):
+    @staticmethod
+    def _find_quarantine_role(guild):
+        return find_quarantine_role(guild)
+
+    async def quarantine_member(self, guild, member, reason="Junior Atlas anti-nuke quarantine"):
         if not member or not guild.me or member.id in {guild.owner_id, guild.me.id}:
             return False
-        quarantine = discord.utils.get(guild.roles, name="Fallen Quarantine")
+        quarantine = self._find_quarantine_role(guild)
         if quarantine is None:
             try:
-                quarantine = await guild.create_role(name="Fallen Quarantine", permissions=discord.Permissions.none(), reason=reason)
+                quarantine = await guild.create_role(name=QUARANTINE_ROLE_NAME, permissions=discord.Permissions.none(), reason=reason)
                 for channel in guild.channels:
                     try:
                         await channel.set_permissions(quarantine, view_channel=False, send_messages=False, reason=reason)
@@ -669,7 +699,7 @@ class Bot(commands.AutoShardedBot):
                 roles.append(role)
 
             if roles:
-                await member.add_roles(*roles, reason="Fallen anti-nuke quarantine recovery")
+                await member.add_roles(*roles, reason="Junior Atlas anti-nuke quarantine recovery")
                 restored = len(roles)
 
             # Keep the quarantine role and recovery snapshot until every saved
@@ -678,11 +708,11 @@ class Bot(commands.AutoShardedBot):
             if incomplete:
                 return restored
 
-            quarantine = discord.utils.get(guild.roles, name="Fallen Quarantine")
+            quarantine = find_quarantine_role(guild)
             if quarantine and quarantine in member.roles and quarantine < guild.me.top_role:
                 await member.remove_roles(
                     quarantine,
-                    reason="Fallen anti-nuke quarantine recovery",
+                    reason="Junior Atlas anti-nuke quarantine recovery",
                 )
             await self.extreme.snapshot_delete(guild.id, f"__quarantine__:{member_id}")
         except discord.HTTPException:
@@ -765,7 +795,7 @@ class Bot(commands.AutoShardedBot):
                     saved_name,
                     position=saved_position,
                     overwrites=saved_overwrites,
-                    reason='Fallen anti-nuke restoration',
+                    reason='Junior Atlas anti-nuke restoration',
                 )
                 return created.id
 
@@ -775,7 +805,7 @@ class Bot(commands.AutoShardedBot):
                     category=saved_category,
                     position=saved_position,
                     overwrites=saved_overwrites,
-                    reason='Fallen anti-nuke restoration',
+                    reason='Junior Atlas anti-nuke restoration',
                 )
                 return created.id
 
@@ -787,7 +817,7 @@ class Bot(commands.AutoShardedBot):
                     overwrites=saved_overwrites,
                     bitrate=baseline.get("bitrate", resource.bitrate),
                     user_limit=baseline.get("user_limit", resource.user_limit),
-                    reason='Fallen anti-nuke restoration',
+                    reason='Junior Atlas anti-nuke restoration',
                 )
                 return created.id
 
@@ -809,7 +839,7 @@ class Bot(commands.AutoShardedBot):
                     nsfw=bool(baseline.get("nsfw", False)),
                     slowmode_delay=max(0, int(baseline.get("slowmode_delay") or 0)),
                     overwrites=saved_overwrites,
-                    reason='Fallen anti-nuke restoration',
+                    reason='Junior Atlas anti-nuke restoration',
                 )
                 return created.id
 
@@ -820,10 +850,10 @@ class Bot(commands.AutoShardedBot):
                     name=saved_name, permissions=permissions, colour=colour,
                     hoist=bool(baseline.get("hoist", False)),
                     mentionable=bool(baseline.get("mentionable", False)),
-                    reason='Fallen anti-nuke restoration',
+                    reason='Junior Atlas anti-nuke restoration',
                 )
                 try:
-                    await role.edit(position=min(saved_position, guild.me.top_role.position - 1), reason='Fallen anti-nuke restoration')
+                    await role.edit(position=min(saved_position, guild.me.top_role.position - 1), reason='Junior Atlas anti-nuke restoration')
                 except discord.HTTPException:
                     pass
                 return role.id
@@ -894,11 +924,11 @@ class Bot(commands.AutoShardedBot):
                 self._destructive_actions.pop(key, None)
                 return
             if member is not None:
-                await self.quarantine_member(guild, member, reason=f"Fallen anti-nuke: {action} burst")
+                await self.quarantine_member(guild, member, reason=f"Junior Atlas anti-nuke: {action} burst")
             # Recovery and containment must still run if the actor is uncached
             # or cannot be fetched; failing attribution must not skip recovery.
             await self.restore_security_state(guild)
-            await self.security_lockdown(guild.id, reason=f"Fallen anti-nuke containment: {action} burst by {actor_id}")
+            await self.security_lockdown(guild.id, reason=f"Junior Atlas anti-nuke containment: {action} burst by {actor_id}")
             self._destructive_actions.pop(key, None)
 
     async def _audit_actor_for(self, guild, action, target_id):
@@ -1067,7 +1097,7 @@ class Bot(commands.AutoShardedBot):
         uwu = await self.uwuify.transform_message(message.guild.id, message.author.id, message.content)
         if uwu is not None and uwu != message.content:
             try:
-                await message.delete(reason='Fallen UwUify transformation')
+                await message.delete(reason='Junior Atlas UwUify transformation')
                 await message.channel.send(uwu, allowed_mentions=discord.AllowedMentions.none(), reference=message, mention_author=False)
             except discord.HTTPException:
                 log.warning('UwUify failed guild=%s user=%s message=%s', message.guild.id, message.author.id, message.id)
@@ -1316,7 +1346,9 @@ class Bot(commands.AutoShardedBot):
         await close_step("greeting_worker", self.greeting_worker.close())
         await close_step("greetings", self.greetings.close())
         await close_step("reactions", self.reactions.close())
-        await close_step("dashboard", self.dashboard.close())
+        if self.dashboard is not None:
+            await close_step("dashboard", self.dashboard.close())
+            self.dashboard = None
         await close_step("shard_leases", self.shard_leases.release())
         await close_step("redis_cache", self.cache.close())
         await close_step("database", self.db.close())

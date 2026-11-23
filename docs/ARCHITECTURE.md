@@ -1,6 +1,6 @@
-# Fallen architecture
+# Junior Atlas architecture
 
-Fallen keeps one repository but separates responsibilities by runtime layer. This is deliberate: a monorepo is not itself the problem; coupling unrelated responsibilities inside command handlers is.
+Junior Atlas keeps one repository but separates responsibilities by runtime layer. This is deliberate: a monorepo is not itself the problem; coupling unrelated responsibilities inside command handlers is.
 
 ## Request flow
 
@@ -16,7 +16,7 @@ Commands should validate permissions and arguments, then call services. Durable 
 - `bot/models/` — durable schema.
 - `bot/workers/` — scheduled/background work.
 - `bot/cache/` — Redis cache, rate limiting, invalidation and single-flight.
-- `bot/web/` — HTTP health/dashboard boundary.
+- `bot/web/` — deferred dashboard boundary. Health and readiness live in `bot/core/health.py` and start independently of the dashboard.
 
 ## V16 capability implementation
 
@@ -34,6 +34,10 @@ The previous V16 layer only stored 100 booleans. It now has:
 - one shared hybrid command surface for prefix/slash V16 administration.
 
 Not every capability is enabled by default. Destructive enforcement remains opt-in; non-destructive profile/engagement/diagnostic capabilities are enabled by default.
+
+## Dashboard deferral
+
+The dashboard is disabled by default (`DASHBOARD_ENABLED=false`). `DashboardAPI` is only imported and started when explicitly enabled, so normal bot startup does not require dashboard credentials. The `control-center*` directories are preview scaffolds and are not part of the supported runtime.
 
 ## Secrets
 

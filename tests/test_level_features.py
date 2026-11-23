@@ -1,5 +1,7 @@
 from pathlib import Path
+
 from bot.services.levels import LevelService
+
 
 def test_xp_threshold_scales():
     assert LevelService.xp_needed(0) == 0

@@ -1,5 +1,12 @@
-import asyncio, json
+import asyncio
+import json
+import logging
+
 from bot.cache.keys import guild as guild_key
+
+log = logging.getLogger("bot.cache.invalidation")
+
+
 class CacheInvalidationSubscriber:
     def __init__(self, cache): self.cache, self.task = cache, None
     async def start(self): self.task = asyncio.create_task(self._run(), name='redis-invalidation-subscriber')
@@ -13,7 +20,9 @@ class CacheInvalidationSubscriber:
                             data = json.loads(msg['data'])
                             await self.cache.delete(guild_key(int(data['guild_id'])))
             except asyncio.CancelledError: raise
-            except Exception: await asyncio.sleep(1)
+            except Exception:
+                log.warning("cache invalidation subscriber disconnected; retrying", exc_info=True)
+                await asyncio.sleep(1)
     async def close(self):
         if self.task:
             self.task.cancel(); await asyncio.gather(self.task, return_exceptions=True)

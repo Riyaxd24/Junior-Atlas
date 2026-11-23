@@ -1,1 +1,1 @@
-{{- define "discord-bot.fullname" -}}discord-bot{{- end -}}
+{{- define "junior-atlas.fullname" -}}junior-atlas{{- end -}}

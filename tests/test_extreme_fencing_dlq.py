@@ -1,9 +1,9 @@
-import asyncio
 import pytest
-from bot.core.fencing import current_fence, push_fence, pop_fence, StaleLeaseError
+
+from bot.core.event_queue import GatewayEventQueue
+from bot.core.fencing import current_fence, pop_fence, push_fence
 from bot.core.shard_lease import ShardLeaseManager
 from bot.workers.gateway import GatewayWorkerPool
-from bot.core.event_queue import GatewayEventQueue
 
 
 class LeaseCache:

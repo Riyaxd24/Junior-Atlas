@@ -102,3 +102,18 @@
 2. Stop Redis and confirm the worker reports degraded Redis while database cleanup remains usable.
 3. Run cleanup jobs twice and confirm the second run removes no duplicate rows.
 4. Schedule a reminder and confirm it remains delivered once despite scheduler restart.
+
+## Audit and repair milestone (2026-11-23)
+
+1. Start the bot with `DISCORD_TOKEN` unset and confirm a clear configuration error is logged
+   and the process exits without attempting a Discord login.
+2. Start the bot with dashboard credentials unset and confirm startup succeeds and logs that the
+   dashboard is disabled.
+3. Confirm `/healthz` returns 200 and `/readyz` reports dependency readiness.
+4. Copy `.env.example` verbatim to `.env` and confirm settings validation accepts empty optional
+   values such as `SHARD_COUNT=` and `INSTANCE_ID=`.
+5. Open a ticket and confirm the new `junior-atlas-ticket-owner:` topic; confirm a legacy
+   `fallen-ticket-owner:` topic is still recognized by the close command.
+6. Confirm a pre-rebrand `Fallen Quarantine` role is found by unquarantine recovery.
+7. Republish any previously published rules panel so buttons use the new custom-ID prefix.
+8. Confirm the dashboard does not listen on its port unless `DASHBOARD_ENABLED=true`.

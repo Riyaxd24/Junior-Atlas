@@ -1,5 +1,10 @@
 # Stage 0 Audit
 
+> **Historical record.** This document captures the pre-rebrand Stage 0 baseline and
+> intentionally retains the upstream name **FALLEN**. It is not a statement of current
+> branding or current test counts. Current findings are in the addendum at the end and
+> in `docs/PROGRESS.md` / `docs/COMPLIANCE_CHECKLIST.md`.
+
 ## Baseline
 
 - Repository: `NOAH-NULL/FALLEN`
@@ -112,3 +117,56 @@ LoginFailure - improper token
 ```
 
 The bot startup test used an empty token only; no real Discord credentials are available.
+
+## Current audit addendum — 2026-11-23 (post-rebrand repair)
+
+This addendum supersedes the Stage 0 statements where they conflict. Stage 0 above is
+preserved as a historical baseline.
+
+### Licensing
+
+- Re-checked `NOAH-NULL/FALLEN` at commit `31c7e35`: no `LICENSE`, `COPYING`, or `NOTICE`
+  file exists, and the GitHub API reports `"license": null`.
+- Consequence: the upstream work is **All rights reserved**. This derivative cannot be
+  relicensed or publicly distributed without written permission from the upstream holder.
+- Added `LICENSE` with the factual licensing status and `NOTICE.md` with upstream
+  attribution, the retained archive, third-party license notes, and required follow-up.
+- The Stage 0 statement that `NOTICE.md` existed was inaccurate; it is now restored.
+
+### Branding
+
+- Replaced inherited product branding in runtime code, tests, scripts, packaging metadata,
+  and deferred dashboard scaffolds with **Junior Atlas**.
+- Retained **FALLEN** only for legally required attribution, historical audit records, the
+  retained upstream archive, and two deliberate backward-compatibility identifiers:
+  the legacy ticket topic prefix and the legacy quarantine role name.
+- Renamed `tests/test_fallen_hardening.py` to `tests/test_core_hardening.py`.
+
+### Dashboard
+
+- `DashboardAPI` is no longer imported or started during normal bot startup.
+- `DASHBOARD_ENABLED=false` is the default; the bot starts without dashboard credentials.
+- `bot/web/api.py` remains isolated and importable for future development.
+- `/healthz` and `/readyz` remain active through `bot/core/health.py`.
+
+### Configuration
+
+- Removed duplicate `DB_USE_PGBOUNCER` and `DB_POOL_SIZE` entries from `.env.example`.
+- Aligned `OTEL_SERVICE_NAME` with the project name (`junior-atlas`).
+- Added validation for URL schemes, ports, queue capacities, log levels, owner IDs, and
+  optional empty values.
+- Added an explicit, actionable startup failure for a missing `DISCORD_TOKEN`.
+- Updated `pyproject.toml` metadata for `junior-atlas`.
+
+### Verification snapshot
+
+Exact current results are recorded in `docs/PROGRESS.md` and the audit final report.
+No live Discord token was available, so gateway and slash-command integration remain
+manual verification items.
+
+### Remaining limitations
+
+- Public distribution remains blocked pending upstream permission or a license.
+- Ruff retains a documented set of pre-existing findings; see the audit final report.
+- Dashboard production work remains deferred.
+

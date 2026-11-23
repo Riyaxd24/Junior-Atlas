@@ -2,6 +2,26 @@
 
 Status: `[x]` implemented and verified, `[~]` partial, `[ ]` missing.
 
+## Audit and repair (2026-11-23)
+
+- [x] Upstream FALLEN repository inspected; no license file or metadata found.
+- [x] `LICENSE` and `NOTICE.md` restored with accurate All-rights-reserved status.
+- [x] Upstream copyright and repository attribution preserved.
+- [~] Public distribution and relicensing remain blocked pending written upstream permission.
+- [x] Inherited product branding replaced with Junior Atlas in active runtime code.
+- [x] Historical audit records clearly marked and retained.
+- [x] `DashboardAPI` no longer starts during normal bot startup.
+- [x] Bot starts without dashboard credentials (`DASHBOARD_ENABLED=false`).
+- [x] `/healthz` and `/readyz` remain available.
+- [x] Duplicate `DB_USE_PGBOUNCER` and related environment entries removed.
+- [x] `OTEL_SERVICE_NAME` corrected to `junior-atlas`.
+- [x] `pyproject.toml` metadata updated for `junior-atlas`.
+- [x] Environment settings validated, with regression tests.
+- [x] Missing `DISCORD_TOKEN` produces a clear startup error.
+- [x] No new secrets added to tracked files.
+- [x] Regression tests added for the audit repairs.
+- [ ] Live Discord gateway and slash-command verification (requires a real token).
+
 ## Stage 0
 
 - [~] Source-of-truth documents restored; repository `SPEC.md` is now present.
@@ -25,7 +45,8 @@ Status: `[x]` implemented and verified, `[~]` partial, `[ ]` missing.
 - [x] Central permission and error layers.
 - [x] Theme, paginator, and confirmation utilities.
 - [x] PostgreSQL/Redis health and graceful shutdown.
-- [~] License and repository policy documents.
+- [x] LICENSE and NOTICE.md restored with accurate upstream licensing status.
+- [~] Public distribution/relicensing permission from the upstream copyright holder.
 
 ## M1-M11
 
@@ -73,7 +94,7 @@ All Module D through K, M, N, and L work remains `[ ]` until implementation and 
 
 ## M12
 
-- [~] Full test matrix.
+- [x] Full test suite run; exact counts recorded in the audit final report.
 - [x] Security review and secret scan.
-- [x] Docker finalization.
-- [x] Complete documentation and final report.
+- [x] Docker validation performed for this milestone.
+- [~] Historical final report retained; reconciled by the audit addendum.

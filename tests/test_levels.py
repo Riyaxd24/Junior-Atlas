@@ -1,3 +1,5 @@
+import itertools
+
 from bot.services.levels import LevelService
 
 
@@ -25,7 +27,7 @@ def test_level_from_total_xp_edges():
 def test_thresholds_are_strictly_increasing():
     thresholds = LevelService.XP_THRESHOLDS
     assert len(thresholds) == 101
-    assert all(a < b for a, b in zip(thresholds, thresholds[1:]))
+    assert all(a < b for a, b in itertools.pairwise(thresholds))
 
 
 def test_message_xp_ceiling_matches_reference_limit():

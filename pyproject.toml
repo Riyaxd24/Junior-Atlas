@@ -1,7 +1,22 @@
 [project]
 name = "junior-atlas"
 version = "0.1.0"
+description = "A modular, multi-guild Discord bot for moderation, security, and community operations."
+readme = "README.md"
 requires-python = ">=3.12,<3.15"
+authors = [{ name = "Junior Atlas contributors" }]
+license = { file = "LICENSE" }
+keywords = ["discord", "discord.py", "moderation", "automation", "postgresql", "redis"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Communications :: Chat",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -10,6 +25,7 @@ addopts = "-q --cov=bot --cov-report=term-missing"
 
 [tool.ruff]
 line-length = 100
+target-version = "py312"
 
 [tool.mypy]
 python_version = "3.12"

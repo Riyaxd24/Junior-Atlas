@@ -25,3 +25,6 @@ The mandatory implementation stack is Python 3.12+, discord.py 2.x, PostgreSQL, 
 2.x async, asyncpg, Alembic, Redis, ARQ, Pydantic/Pydantic Settings, pytest, Docker Compose,
 and pinned compatible dependencies. The complete requirements are maintained in the project
 session request and in [COMPLIANCE_CHECKLIST.md](COMPLIANCE_CHECKLIST.md).
+
+Dashboard development is explicitly deferred. The bot must start and serve health/readiness
+without dashboard credentials; `bot/web/api.py` is retained only for future work.

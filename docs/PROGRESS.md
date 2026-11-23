@@ -1,5 +1,28 @@
 # Junior Atlas Progress
 
+## Current status — audit and repair milestone (2026-11-23)
+
+Status: implementation complete; manual Discord verification pending.
+
+- Licensing: upstream FALLEN has no license; `LICENSE` and `NOTICE.md` now document the
+  All-rights-reserved status and attribution. Public distribution is blocked pending
+  upstream permission.
+- Branding: runtime, tests, scripts, and deferred dashboard scaffolds now use Junior Atlas.
+  Historical audit records retain the FALLEN name intentionally.
+- Dashboard: disabled by default and no longer started during bot startup.
+- Configuration: duplicate environment entries removed, `OTEL_SERVICE_NAME` corrected,
+  settings validation expanded, and missing-token startup error made actionable.
+- Regression coverage added for configuration, dashboard deferral, branding/licensing,
+  ticket topic compatibility, and quarantine role compatibility.
+- Exact verification results are in the audit final report supplied with this milestone.
+
+## Historical milestone log
+
+> **Historical record.** The entries below are the original milestone log. They are kept
+> for provenance. Where an “in progress” entry is followed by a completed entry with the
+> same milestone number, the completed entry is authoritative. Test counts are snapshots
+> from the time of that milestone and do not describe the current tree.
+
 ## Stage 0 - Audit and baseline
 
 Status: complete
@@ -128,6 +151,9 @@ Status: checkpoint complete
 - Verification: 396 tests passed, 1 warning; M11 worker lint passes.
 
 ## M11 - Background jobs and reliability
+
+> **Superseded start-of-milestone note.** This “in progress” block is historical. The
+> completed M11 entry above is authoritative.
 
 Status: in progress
 

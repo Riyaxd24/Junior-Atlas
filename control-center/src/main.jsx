@@ -55,7 +55,7 @@ function App() {
     <aside className={'sidebar ' + (mobileOpen ? 'sidebar-open' : '')}>
       <div className="brand-row">
         <div className="brand-mark"><span>F</span><i /></div>
-        <div className="brand-copy"><strong>FALLEN</strong><small>CONTROL CENTER <span>V0.1</span></small></div>
+        <div className="brand-copy"><strong>Junior Atlas</strong><small>CONTROL CENTER <span>V0.1</span></small></div>
         <button className="icon-button mobile-close" onClick={() => setMobileOpen(false)} aria-label="Close menu"><X size={17}/></button>
       </div>
       <button className="workspace-switch" onClick={() => notify('Guild picker will use Discord OAuth once the API is configured.')}>
@@ -132,11 +132,11 @@ function App() {
             <SetupStep title="Live bot data" desc="Connect a protected API to the bot database"/>
           </div><button className="primary-wide" onClick={() => setShowConnect(true)}>Configure Discord connection <ExternalLink size={14}/></button></div>
         </section>
-        <footer className="footer"><div><div className="footer-mark">F</div><span>FALLEN <i>CONTROL CENTER</i></span></div><span>Built for calm, deliberate control.</span><a href="https://github.com/NOAH-NULL/FALLEN" target="_blank" rel="noreferrer">Repository <ExternalLink size={12}/></a></footer>
+        <footer className="footer"><div><div className="footer-mark">J</div><span>Junior Atlas <i>CONTROL CENTER</i></span></div><span>Built for calm, deliberate control.</span><a href="https://github.com/NOAH-NULL/FALLEN" target="_blank" rel="noreferrer">Upstream FALLEN <ExternalLink size={12}/></a></footer>
       </div>
     </main>
 
-    {showConnect && <div className="modal-backdrop" onClick={() => setShowConnect(false)}><div className="connect-modal" onClick={e => e.stopPropagation()}><button className="modal-close icon-button" onClick={() => setShowConnect(false)} aria-label="Close dialog"><X size={18}/></button><div className="modal-emblem"><Bot size={25}/></div><div className="eyebrow">FALLEN AUTHENTICATION</div><h2>Connect your Discord</h2><p>Discord OAuth is not configured in this deployment yet. Set up the API environment first, then enable the sign-in flow.</p><div className="requirements"><div><Check size={15}/> Discord application client ID</div><div><Check size={15}/> OAuth client secret stored server-side</div><div><Check size={15}/> Exact callback URL registered in Discord</div><div><Check size={15}/> HTTPS and a strong session secret</div></div><button className="primary-wide" onClick={() => { setShowConnect(false); notify('See control-center/README.md for setup steps.'); }}>Got it <ChevronRight size={15}/></button><a href="https://discord.com/developers/applications" target="_blank" rel="noreferrer">Open Discord Developer Portal <ExternalLink size={12}/></a></div></div>}
+    {showConnect && <div className="modal-backdrop" onClick={() => setShowConnect(false)}><div className="connect-modal" onClick={e => e.stopPropagation()}><button className="modal-close icon-button" onClick={() => setShowConnect(false)} aria-label="Close dialog"><X size={18}/></button><div className="modal-emblem"><Bot size={25}/></div><div className="eyebrow">JUNIOR ATLAS AUTHENTICATION</div><h2>Connect your Discord</h2><p>Discord OAuth is not configured in this deployment yet. Set up the API environment first, then enable the sign-in flow.</p><div className="requirements"><div><Check size={15}/> Discord application client ID</div><div><Check size={15}/> OAuth client secret stored server-side</div><div><Check size={15}/> Exact callback URL registered in Discord</div><div><Check size={15}/> HTTPS and a strong session secret</div></div><button className="primary-wide" onClick={() => { setShowConnect(false); notify('See control-center/README.md for setup steps.'); }}>Got it <ChevronRight size={15}/></button><a href="https://discord.com/developers/applications" target="_blank" rel="noreferrer">Open Discord Developer Portal <ExternalLink size={12}/></a></div></div>}
     {toast && <div className="toast"><CircleHelp size={16}/>{toast}</div>}
   </div>;
 }

@@ -49,6 +49,6 @@ rebound by this recovery path.
 
 Administrators can use `/v16 unlockdown` to retry a saved lockdown recovery and
 `/v16 unquarantine <member>` to restore a quarantined member's saved roles. If role hierarchy,
-missing roles, or permissions prevent a complete recovery, FALLEN keeps the recovery snapshot and
+missing roles, or permissions prevent a complete recovery, Junior Atlas keeps the recovery snapshot and
 the quarantine role so the partial result is not mistaken for success.
 

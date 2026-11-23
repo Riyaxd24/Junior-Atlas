@@ -1,4 +1,4 @@
-"""Dedicated prefix commands for FALLEN's welcome/goodbye system.
+"""Dedicated prefix commands for Junior Atlas's welcome/goodbye system.
 
 These commands intentionally live outside TextCommands so unrelated prefix
 command failures cannot disable the welcomer configuration interface.
@@ -36,7 +36,7 @@ class GreetingPrefix(commands.Cog):
         await self._set_cfg(ctx,f'{kind}_message',message[:1000],'✅ Greeting message saved.')
     @greeting_group.command(name='banner')
     @commands.has_permissions(manage_guild=True)
-    async def greeting_banner(self,ctx,kind:str,attachment:discord.Attachment=None,*,url:str=None):
+    async def greeting_banner(self,ctx,kind:str,attachment:discord.Attachment|None=None,*,url:str|None=None):
         if kind not in ('welcome','goodbye'): return await ctx.send('kind must be welcome or goodbye')
         if attachment:
             try:
@@ -58,7 +58,7 @@ class GreetingPrefix(commands.Cog):
 
     @greeting_group.command(name='embed')
     @commands.has_permissions(manage_guild=True)
-    async def greeting_embed(self,ctx,kind:str,enabled:bool,title:str=None,*,description:str=None):
+    async def greeting_embed(self,ctx,kind:str,enabled:bool,title:str|None=None,*,description:str|None=None):
         if kind not in ('welcome','goodbye'): return await ctx.send('kind must be welcome or goodbye')
         await self._set_cfg(ctx,f'{kind}_embed_enabled',enabled,f'✅ {kind.title()} embed: **{enabled}**')
         if title is not None: await self._set_cfg(ctx,f'{kind}_embed_title',title[:256], '✅ Embed title saved.')
@@ -97,9 +97,8 @@ class GreetingPrefix(commands.Cog):
 
     @greeting_group.command(name='dm')
     @commands.has_permissions(manage_guild=True)
-    async def greeting_dm(self,ctx,enabled:bool,*,message:str=None):
+    async def greeting_dm(self,ctx,enabled:bool,*,message:str|None=None):
         if message is not None:
-            from bot.commands.greeting import Greeting
             error=validate_template(message)
             if error: return await ctx.send(f'❌ {error}')
         values={'welcome_dm_enabled':enabled}
@@ -110,7 +109,7 @@ class GreetingPrefix(commands.Cog):
 
     @greeting_group.command(name='button')
     @commands.has_permissions(manage_guild=True)
-    async def greeting_button(self,ctx,enabled:bool,url:str=None,*,label:str='Read the Rules'):
+    async def greeting_button(self,ctx,enabled:bool,url:str|None=None,*,label:str='Read the Rules'):
         if enabled and (not url or not url.strip().startswith('https://')):
             return await ctx.send('❌ The button requires a valid **https://** URL.')
         if label and len(label)>80: label=label[:80]
@@ -192,7 +191,7 @@ class GreetingPrefix(commands.Cog):
 
     @greeting_group.command(name='button-set')
     @commands.has_permissions(manage_guild=True)
-    async def greeting_button_set(self,ctx,slot:int,enabled:bool,url:str=None,*,label:str=None):
+    async def greeting_button_set(self,ctx,slot:int,enabled:bool,url:str|None=None,*,label:str|None=None):
         if not 1<=slot<=5:
             return await ctx.send('❌ Button slot must be between 1 and 5.')
         settings=await self.bot.welcome_engine.get(ctx.guild.id)

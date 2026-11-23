@@ -1,4 +1,5 @@
 import logging
+
 import discord
 from discord import app_commands
 
@@ -43,5 +44,5 @@ async def handle_app_command_error(interaction: discord.Interaction, error: app_
             exc_info=(type(original), original, original.__traceback__),
         )
     embed = discord.Embed(title="✕ Command failed", description=_message(error), colour=discord.Colour.red())
-    embed.set_footer(text="Fallen • Try /help for command usage")
+    embed.set_footer(text="Junior Atlas • Try /help for command usage")
     await safe_send(interaction, embed=embed, ephemeral=True)

@@ -1,10 +1,11 @@
-from io import BytesIO
-from pathlib import Path
-from datetime import datetime, timezone
-from string import Formatter
 import asyncio
 import base64
 import logging
+from datetime import UTC, datetime
+from io import BytesIO
+from pathlib import Path
+from string import Formatter
+
 import aiohttp
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
@@ -47,7 +48,7 @@ class GreetingRenderer:
         if self.http is None or self.http.closed:
             self.http = aiohttp.ClientSession(
                 timeout=aiohttp.ClientTimeout(total=15),
-                headers={'User-Agent': 'FallenGreetingRenderer/1.0'},
+                headers={'User-Agent': 'JuniorAtlasGreetingRenderer/1.0'},
             )
             self._owns_session = True
 
@@ -109,7 +110,7 @@ class GreetingRenderer:
                 async with self.http.get(str(source)) as response:
                     if response.status == 200:
                         return await response.read()
-            except (aiohttp.ClientError, asyncio.TimeoutError):
+            except (TimeoutError, aiohttp.ClientError):
                 logger.warning('Failed to fetch greeting background', exc_info=True)
             return None
         path = Path(str(source))
@@ -136,7 +137,7 @@ class GreetingRenderer:
         if created_at is None:
             return 'Unknown'
         try:
-            days = max(0, (datetime.now(timezone.utc) - created_at).days)
+            days = max(0, (datetime.now(UTC) - created_at).days)
         except (TypeError, ValueError):
             return 'Unknown'
         years, remaining = divmod(days, 365)

@@ -3,8 +3,10 @@
 Revision ID: 0006_member_invite_attribution
 Revises: 0005_invite_stats
 """
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
+
 revision='0006_member_invite_attribution'
 down_revision='0005_invite_stats'
 branch_labels=None

@@ -14,7 +14,7 @@ class FenceContext:
 
 
 _current: contextvars.ContextVar[FenceContext | None] = contextvars.ContextVar(
-    "fallen_fence_context", default=None
+    "junior_atlas_fence_context", default=None
 )
 
 

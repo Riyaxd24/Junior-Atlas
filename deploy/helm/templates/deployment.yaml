@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "discord-bot.fullname" . }}
+  name: {{ include "junior-atlas.fullname" . }}
 spec:
   replicas: {{ .Values.replicaCount }}
-  selector: {matchLabels: {app: discord-bot}}
+  selector: {matchLabels: {app: junior-atlas}}
   template:
-    metadata: {labels: {app: discord-bot}}
+    metadata: {labels: {app: junior-atlas}}
     spec:
       containers:
       - name: bot
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         envFrom:
-        - secretRef: {name: discord-bot-secrets}
+        - secretRef: {name: junior-atlas-secrets}
         env:
         - name: HEALTH_PORT
           value: "{{ .Values.ports.health }}"

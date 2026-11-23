@@ -3,6 +3,8 @@ import logging
 import random
 import secrets
 
+from redis.exceptions import RedisError
+
 logger = logging.getLogger(__name__)
 
 
@@ -133,7 +135,7 @@ class DistributedSingleFlight:
 
                     try:
                         await self._wait_for_completion(notify_channel, backoff)
-                    except Exception:
+                    except (OSError, RuntimeError, TimeoutError, RedisError):
                         await asyncio.sleep(backoff + random.random() * backoff)
                     backoff = min(0.5, backoff * 1.7)
         finally:
@@ -155,20 +157,17 @@ class DistributedSingleFlight:
                 try:
                     await asyncio.wait_for(ps.unsubscribe(channel), timeout=0.25)
                 except Exception:
-                    pass
+                    logger.debug("pubsub unsubscribe failed for channel %s", channel, exc_info=True)
 
     async def _renew(self, key, token, fence, lease_lost_event: asyncio.Event):
         interval = max(1.0, self.ttl_ms / 3000)
-        try:
-            while True:
-                await asyncio.sleep(interval)
-                if hasattr(self.cache, 'renew_fenced_lock'):
-                    current = await self.cache.renew_fenced_lock(key, token, fence, self.ttl_ms)
-                else:
-                    current = await self.cache.renew_lock(key, token, self.ttl_ms)
-                if not current:
-                    logger.error(f"Distributed lease renewal failed for key {key}. Triggering abortion.")
-                    lease_lost_event.set()
-                    return
-        except asyncio.CancelledError:
-            raise
+        while True:
+            await asyncio.sleep(interval)
+            if hasattr(self.cache, 'renew_fenced_lock'):
+                current = await self.cache.renew_fenced_lock(key, token, fence, self.ttl_ms)
+            else:
+                current = await self.cache.renew_lock(key, token, self.ttl_ms)
+            if not current:
+                logger.error(f"Distributed lease renewal failed for key {key}. Triggering abortion.")
+                lease_lost_event.set()
+                return

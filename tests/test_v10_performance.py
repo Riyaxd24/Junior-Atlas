@@ -11,4 +11,4 @@ def test_prefix_commands_have_fast_lane_before_heavy_message_work():
 
 def test_release_name_is_v10():
     src = Path('scripts/build_release.py').read_text()
-    assert 'Fallen-v1.0-performance-first.zip' in src
+    assert 'junior-atlas-0.1.0.zip' in src

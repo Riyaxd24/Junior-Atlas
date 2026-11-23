@@ -1,8 +1,22 @@
 from __future__ import annotations
+
 from datetime import datetime
-from sqlalchemy import BigInteger, Boolean, DateTime, Integer, String, Text, JSON, UniqueConstraint, func
+
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Boolean,
+    DateTime,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column
+
 from .schema import Base
+
 
 class FeatureRecord(Base):
     __tablename__ = 'feature_records'

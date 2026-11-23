@@ -232,7 +232,7 @@ class ConsentView(discord.ui.View):
         if gif_url:
             embed.set_image(url=gif_url)
 
-        embed.set_footer(text="Fallen • Fun & community")
+        embed.set_footer(text="Junior Atlas • Fun & community")
         await interaction.response.edit_message(embed=embed, view=self)
         self.stop()
 
@@ -240,7 +240,7 @@ class ConsentView(discord.ui.View):
     async def decline(self, interaction: discord.Interaction, button: discord.ui.Button):
         self._disable_all()
         embed = info_embed("🔞 Fuck", f"{self.target.mention} declined.")
-        embed.set_footer(text="Fallen • Fun & community")
+        embed.set_footer(text="Junior Atlas • Fun & community")
         await interaction.response.edit_message(embed=embed, view=self)
         self.stop()
 
@@ -583,7 +583,7 @@ class Fun(commands.Cog):
             f"{ctx.author.mention} wants to fuck {target.mention}.\n"
             f"{target.mention}, do you accept?"
         )
-        embed.set_footer(text="Fallen • Fun & community")
+        embed.set_footer(text="Junior Atlas • Fun & community")
         view.message = await ctx.send(
             content=target.mention,
             embed=embed,

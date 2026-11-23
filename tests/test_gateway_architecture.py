@@ -1,5 +1,7 @@
 import asyncio
+
 from bot.core.event_queue import GatewayEventQueue
+
 
 def test_gateway_queue_is_bounded_and_nonblocking():
     q=GatewayEventQueue(maxsize=1)
@@ -27,6 +29,7 @@ def test_critical_flood_cannot_starve_normal_events():
 
 
 from types import SimpleNamespace
+
 from bot.core.bot import Bot
 
 

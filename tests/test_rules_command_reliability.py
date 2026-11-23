@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from bot.commands.rules import Rules, _guard_rules_command
 

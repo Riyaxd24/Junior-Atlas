@@ -1,17 +1,15 @@
 """Regression tests for high-risk V16 service behavior."""
 
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
-import discord
 import pytest
 from sqlalchemy.dialects import postgresql
 
-from bot.models import Playlist, Ticket
+from bot.services.automod import AutoModService
 from bot.services.extreme import IMPLEMENTED_FEATURES, ExtremeService
 from bot.services.platform import PlatformService
-from bot.services.automod import AutoModService
 
 
 class FakeResult:
@@ -118,7 +116,7 @@ def test_user_snapshots_cannot_overwrite_reserved_recovery_keys():
 async def test_schedule_rejects_unsupported_actions_before_database_access():
     service = ExtremeService(FakeDB())
     with pytest.raises(ValueError, match="must be 'ban' or 'timeout'"):
-        await service.schedule(1, 2, "delete_everything", datetime.now(timezone.utc))
+        await service.schedule(1, 2, "delete_everything", datetime.now(UTC))
 
 
 @pytest.mark.asyncio
@@ -184,7 +182,7 @@ async def test_string_false_cannot_enable_a_security_feature():
 @pytest.mark.asyncio
 async def test_set_rejects_non_boolean_feature_values():
     service = ExtremeService(FakeDB())
-    with pytest.raises(ValueError, match="must be a boolean"):
+    with pytest.raises(TypeError, match="must be a boolean"):
         await service.set(1, "automatic_lockdown", "false")
 
 

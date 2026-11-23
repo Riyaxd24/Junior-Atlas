@@ -1,6 +1,11 @@
-import asyncio, pytest
+import asyncio
+
+import pytest
 from sqlalchemy.dialects.postgresql import dialect
+
 from bot.services.guild_config import GuildConfigService
+
+
 class Cache:
     def __init__(self): self.data={}; self.locks={}
     async def get_json(self,k): return self.data.get(k)

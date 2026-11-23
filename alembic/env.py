@@ -1,11 +1,15 @@
 from __future__ import annotations
-import asyncio, os
+
+import asyncio
+import os
+
 from dotenv import load_dotenv
-from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
-from bot.models import Base
+
+from alembic import context
 from bot.core.config import normalize_database_url
+from bot.models import Base
 
 load_dotenv()
 config=context.config

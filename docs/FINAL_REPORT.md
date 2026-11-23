@@ -1,5 +1,10 @@
 # Junior Atlas - Finalization Report
 
+> **Historical snapshot (pre-audit).** This report records the M12 finalization state
+> before the 2026-11-23 audit and repair milestone. Its test counts, Ruff counts, and
+> “final” claims are superseded by `docs/AUDIT.md` (current addendum) and
+> `docs/PROGRESS.md` (current status). It is retained for provenance.
+
 ## Architecture
 
 Junior Atlas retains the FALLEN Discord gateway and service structure while separating:

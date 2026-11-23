@@ -3,7 +3,7 @@ services:
     build: .
     env_file: .env
     environment:
-      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER:-discordbot}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@pgbouncer:6432/${POSTGRES_DB:-discordbot}"
+      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER:-junior_atlas}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@pgbouncer:6432/${POSTGRES_DB:-junior_atlas}"
       REDIS_URL: redis://redis:6379/0
       DB_USE_PGBOUNCER: "true"
     command: ["python", "-m", "bot.workers.arq"]
@@ -16,7 +16,7 @@ services:
     build: .
     env_file: .env
     environment:
-      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER:-discordbot}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-discordbot}"
+      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER:-junior_atlas}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-junior_atlas}"
     command: ["alembic", "upgrade", "head"]
     restart: "no"
     depends_on:
@@ -26,7 +26,7 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER:-discordbot}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@pgbouncer:6432/${POSTGRES_DB:-discordbot}"
+      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER:-junior_atlas}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@pgbouncer:6432/${POSTGRES_DB:-junior_atlas}"
       REDIS_URL: redis://redis:6379/0
       DB_USE_PGBOUNCER: "true"
     depends_on:
@@ -38,9 +38,9 @@ services:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-discordbot}
+      POSTGRES_USER: ${POSTGRES_USER:-junior_atlas}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      POSTGRES_DB: ${POSTGRES_DB:-discordbot}
+      POSTGRES_DB: ${POSTGRES_DB:-junior_atlas}
     volumes: [postgres_data:/var/lib/postgresql/data]
     healthcheck: {test: ["CMD-SHELL","pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"], interval: 5s, timeout: 5s, retries: 10}
   pgbouncer:
@@ -52,9 +52,9 @@ services:
       - ./deploy/pgbouncer/entrypoint.sh:/opt/pgbouncer-entrypoint.sh:ro
     command: ["/bin/sh", "-c", "/opt/pgbouncer-entrypoint.sh"]
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-discordbot}
+      POSTGRES_USER: ${POSTGRES_USER:-junior_atlas}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      POSTGRES_DB: ${POSTGRES_DB:-discordbot}
+      POSTGRES_DB: ${POSTGRES_DB:-junior_atlas}
   redis:
     image: redis:8-alpine
     restart: unless-stopped

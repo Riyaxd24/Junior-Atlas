@@ -1,4 +1,8 @@
+import logging
+
 from aiohttp import web
+
+log = logging.getLogger("bot.health")
 
 
 async def start_health_server(bot, host, port):
@@ -14,11 +18,11 @@ async def start_health_server(bot, host, port):
         try:
             db = await bot.db.health()
         except Exception:
-            pass
+            log.warning("readiness database check failed", exc_info=True)
         try:
             redis = await bot.cache.health()
         except Exception:
-            pass
+            log.warning("readiness redis check failed", exc_info=True)
         leases = getattr(bot, "shard_leases", None)
         lease_ok = bool(getattr(leases, "healthy", True))
         discord_ready = bool(bot.is_ready())

@@ -2,8 +2,6 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
-import discord
-
 from bot.commands.rules import Rules, RulesPanelView
 
 
@@ -34,7 +32,7 @@ def test_rules_panel_has_standard_companion_embed():
     assert "Please read the rules in the panel above" in embed.description
     assert "**Role buttons**" in embed.description
     assert "**Need help?**" in embed.description
-    assert embed.footer.text == "FALLEN • Server information"
+    assert embed.footer.text == "Junior Atlas • Server information"
 
 
 
@@ -65,8 +63,8 @@ def test_rules_panel_has_exactly_four_buttons_and_unconfigured_slots_are_disable
     assert [item.label for item in view.children] == ["Custom One", "Button 2", "Custom Three", "Button 4"]
     assert [item.disabled for item in view.children] == [False, True, False, True]
     assert [item.custom_id for item in view.children] == [
-        "fallen:rules:987:1", "fallen:rules:987:2",
-        "fallen:rules:987:3", "fallen:rules:987:4",
+        "junior-atlas:rules:987:1", "junior-atlas:rules:987:2",
+        "junior-atlas:rules:987:3", "junior-atlas:rules:987:4",
     ]
 
 

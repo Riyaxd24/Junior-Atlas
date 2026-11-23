@@ -24,7 +24,7 @@ def test_prefix_daily_is_rate_limited():
 def test_tickets_grant_staff_access_and_record_owner():
     source = Path("bot/services/tickets.py").read_text()
     assert "manage_channels" in source
-    assert "fallen-ticket-owner:" in source
+    assert "junior-atlas-ticket-owner:" in source
 
 
 def test_custom_command_output_blocks_mentions():

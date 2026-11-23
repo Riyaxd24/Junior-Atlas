@@ -42,10 +42,10 @@ def test_rules_panel_content_and_button_state_matrix(case):
     assert len(view.children) == 4
     assert [button.disabled for button in view.children] == [False, True, False, True]
     assert [button.custom_id for button in view.children] == [
-        f"fallen:rules:{50000 + case}:1",
-        f"fallen:rules:{50000 + case}:2",
-        f"fallen:rules:{50000 + case}:3",
-        f"fallen:rules:{50000 + case}:4",
+        f"junior-atlas:rules:{50000 + case}:1",
+        f"junior-atlas:rules:{50000 + case}:2",
+        f"junior-atlas:rules:{50000 + case}:3",
+        f"junior-atlas:rules:{50000 + case}:4",
     ]
     assert view.children[0].label == f"Role {case:03d}"
     assert view.children[2].label == f"Extra {case:03d}"

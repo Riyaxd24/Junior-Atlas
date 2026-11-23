@@ -3,6 +3,7 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+
 @dataclass(slots=True)
 class GatewayEvent:
     kind: str
@@ -106,5 +107,5 @@ class GatewayEventQueue:
         try:
             await asyncio.wait_for(wait_all(), timeout=timeout)
             return True
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return False

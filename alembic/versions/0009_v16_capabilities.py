@@ -1,6 +1,8 @@
 """Add durable V16 capability tables."""
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
+
 revision = "0009_v16_capabilities"
 down_revision = "0008_extreme_settings"
 branch_labels = None

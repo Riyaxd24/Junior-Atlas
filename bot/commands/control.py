@@ -2,6 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+
 class Control(commands.GroupCog, name='settings'):
     def __init__(self,bot): self.bot=bot
     @app_commands.command(name='welcome-channel',description='Set welcome channel')

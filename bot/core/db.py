@@ -1,10 +1,12 @@
+from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from time import perf_counter
-from collections.abc import Awaitable, Callable
+
 from sqlalchemy import text
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from bot.core.fencing import current_fence, StaleLeaseError
+
+from bot.core.fencing import StaleLeaseError, current_fence
 from bot.core.metrics import DB_LATENCY
 
 

@@ -1,4 +1,4 @@
-"""FALLEN Control Center API starter.
+"""Junior Atlas Control Center API starter.
 
 OAuth credentials are exchanged server-side. Access tokens are kept in a
 process-local store, never inside the browser's signed cookie. Use Redis or a
@@ -27,13 +27,13 @@ COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
 # store (e.g. Redis) before horizontal scaling or production deployment.
 SERVER_SESSIONS: dict[str, dict] = {}
 
-app = FastAPI(title="FALLEN Control Center API", version="0.1.0")
+app = FastAPI(title="Junior Atlas Control Center API", version="0.1.0")
 app.add_middleware(
     SessionMiddleware,
     secret_key=SESSION_SECRET or "development-only-change-me",
     same_site="lax",
     https_only=COOKIE_SECURE,
-    session_cookie="fallen_session",
+    session_cookie="junior_atlas_session",
     max_age=60 * 60 * 8,
 )
 app.add_middleware(
@@ -70,16 +70,15 @@ def require_session(request: Request) -> dict:
 
 @app.middleware("http")
 async def enforce_browser_origin(request: Request, call_next):
-    if request.method in {"POST", "PATCH", "PUT", "DELETE"}:
-        if request.headers.get("origin") != FRONTEND_ORIGIN:
-            return JSONResponse({"detail": "Invalid request origin."}, status_code=403)
+    if request.method in {"POST", "PATCH", "PUT", "DELETE"} and request.headers.get("origin") != FRONTEND_ORIGIN:
+        return JSONResponse({"detail": "Invalid request origin."}, status_code=403)
     return await call_next(request)
 
 
 @app.get("/api/health")
 async def health():
     # API process health only; not proof the bot, database or Redis are healthy.
-    return {"status": "ok", "service": "fallen-control-center-api", "version": "0.1.0"}
+    return {"status": "ok", "service": "junior-atlas-control-center-api", "version": "0.1.0"}
 
 
 @app.get("/api/auth/login")
@@ -170,7 +169,7 @@ async def logout(request: Request):
     request.session.clear()
     response = JSONResponse({"ok": True})
     response.delete_cookie(
-        "fallen_session", path="/", secure=COOKIE_SECURE, httponly=True, samesite="lax"
+        "junior_atlas_session", path="/", secure=COOKIE_SECURE, httponly=True, samesite="lax"
     )
     return response
 
@@ -200,7 +199,7 @@ async def guilds(request: Request):
                 "icon": guild.get("icon"),
                 "owner": bool(guild.get("owner")),
             })
-    # These are user-manageable guilds, not proof FALLEN is installed there.
+    # These are user-manageable guilds, not proof Junior Atlas is installed there.
     return {"guilds": manageable, "live_bot_data": False}
 
 
@@ -210,4 +209,4 @@ async def guild_overview(guild_id: str, request: Request):
     if not guild_id.isdecimal() or len(guild_id) > 22:
         raise HTTPException(status_code=400, detail="Invalid server ID.")
     # Fail closed until bot-installed checks and a trusted data adapter exist.
-    raise HTTPException(status_code=501, detail="Live server overview is not wired to FALLEN services yet.")
+    raise HTTPException(status_code=501, detail="Live server overview is not wired to Junior Atlas services yet.")

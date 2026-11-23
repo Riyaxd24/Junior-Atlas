@@ -1,7 +1,10 @@
 import asyncio
+
 import pytest
+
 from bot.core.event_queue import GatewayEventQueue
 from bot.workers.gateway import GatewayWorkerPool
+
 
 class Guild:
     def __init__(self, gid): self.id = gid

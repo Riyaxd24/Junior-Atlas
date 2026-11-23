@@ -1,5 +1,5 @@
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 from bot.services.welcome_engine import WelcomeEngine
@@ -95,7 +95,7 @@ def test_greeting_test_commands_do_not_trigger_welcome_side_effects():
 def test_zero_new_account_threshold_really_disables_new_account_flag():
     engine = WelcomeEngine(None)
     settings = engine.normalize({"new_account_days": 0})
-    member = SimpleNamespace(created_at=datetime.now(timezone.utc) - timedelta(days=1))
+    member = SimpleNamespace(created_at=datetime.now(UTC) - timedelta(days=1))
 
     assert settings["new_account_days"] == 0
     assert engine.risk(member, settings)["is_new"] is False

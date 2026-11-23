@@ -1,4 +1,5 @@
 import logging
+
 import discord
 from discord.ext import commands
 
@@ -31,7 +32,7 @@ async def handle_prefix_command_error(ctx: commands.Context, error: commands.Com
                               commands.CommandOnCooldown)):
         log.exception('prefix command failed', exc_info=original)
     embed = discord.Embed(title='✕ Command failed', description=_message(error, ctx.prefix if isinstance(ctx.prefix, str) else ','), colour=discord.Colour.red())
-    embed.set_footer(text='Fallen • Try help for command usage')
+    embed.set_footer(text='Junior Atlas • Try help for command usage')
     try:
         await ctx.send(embed=embed, delete_after=12)
     except discord.HTTPException:

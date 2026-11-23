@@ -1,12 +1,12 @@
-import base64
 import logging
 from datetime import date, datetime
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from bot.models import GuildConfig
+
 from bot.cache.keys import guild as guild_key
 from bot.cache.singleflight import DistributedSingleFlight
+from bot.models import GuildConfig
 
 log = logging.getLogger(__name__)
 

@@ -4,9 +4,9 @@ import discord
 import pytest
 from discord.ext import commands
 
+from bot.commands.prefix import Prefix
 from bot.core.bot import Bot
 from bot.services.guild_config import GuildConfigService
-from bot.commands.prefix import Prefix
 
 
 class FakeConfig:

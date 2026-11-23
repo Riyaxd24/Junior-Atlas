@@ -8,7 +8,11 @@ from urllib.parse import urlparse
 import discord
 from discord import app_commands
 from discord.ext import commands
+from sqlalchemy.exc import SQLAlchemyError
 
+COMMAND_ERRORS = (
+    discord.HTTPException, ValueError, TypeError, KeyError, OSError, SQLAlchemyError,
+)
 
 DANGEROUS_ROLE_PERMISSIONS = (
     "administrator", "manage_guild", "manage_roles", "manage_channels",
@@ -25,14 +29,11 @@ def _guard_rules_command(callback):
     async def guarded(self, interaction: discord.Interaction, *args, **kwargs):
         try:
             return await callback(self, interaction, *args, **kwargs)
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001 - outermost command safety net
             try:
                 await self._report_error(interaction, error)
-            except Exception:
-                self.bot.log.error(
-                    "could not report rules command failure",
-                    exc_info=True,
-                )
+            except Exception:  # never mask the original command failure
+                self.bot.log.exception("could not report rules command failure")
             return None
     return guarded
 
@@ -49,7 +50,7 @@ class RoleToggleButton(discord.ui.Button):
 class RulesPanelView(discord.ui.View):
     """Four persistent role-toggle buttons; state is always read from the DB."""
 
-    def __init__(self, cog: "Rules", guild_id: int, panel: dict):
+    def __init__(self, cog: Rules, guild_id: int, panel: dict):
         super().__init__(timeout=None)
         self.cog = cog
         self.guild_id = int(guild_id)
@@ -60,7 +61,7 @@ class RulesPanelView(discord.ui.View):
             label = (slot.get("label") or "").strip() or f"Button {index + 1}"
             self.add_item(RoleToggleButton(
                 self, index + 1, label=label[:80],
-                custom_id=f"fallen:rules:{self.guild_id}:{index + 1}",
+                custom_id=f"junior-atlas:rules:{self.guild_id}:{index + 1}",
                 disabled=not role_id, row=0,
             ))
 
@@ -108,7 +109,7 @@ class RulesPanelView(discord.ui.View):
         me = guild.me
         if me is None or not me.guild_permissions.manage_roles:
             return await interaction.response.send_message(
-                "FALLEN needs the Manage Roles permission to change access roles.", ephemeral=True
+                "Junior Atlas needs the Manage Roles permission to change access roles.", ephemeral=True
             )
         if role.is_default() or role.managed or role >= me.top_role:
             return await interaction.response.send_message(
@@ -123,14 +124,14 @@ class RulesPanelView(discord.ui.View):
         member = interaction.user
         try:
             if role in member.roles:
-                await member.remove_roles(role, reason="FALLEN rules-panel access toggle")
+                await member.remove_roles(role, reason="Junior Atlas rules-panel access toggle")
                 message = f"Removed {role.name}."
             else:
-                await member.add_roles(role, reason="FALLEN rules-panel access toggle")
+                await member.add_roles(role, reason="Junior Atlas rules-panel access toggle")
                 message = f"Added {role.name}. Channels configured for this role should now be accessible."
         except discord.Forbidden:
             return await interaction.response.send_message(
-                "Discord denied the role change. Check FALLEN's role hierarchy and Manage Roles permission.",
+                "Discord denied the role change. Check Junior Atlas' role hierarchy and Manage Roles permission.",
                 ephemeral=True,
             )
         except discord.HTTPException:
@@ -204,7 +205,7 @@ class Rules(commands.Cog):
             ),
             colour=discord.Colour.blurple(),
         )
-        embed.set_footer(text="FALLEN • Server information")
+        embed.set_footer(text="Junior Atlas • Server information")
         return embed
 
     @staticmethod
@@ -216,7 +217,7 @@ class Rules(commands.Cog):
         Rules._embed(panel)
         rules = panel.get("rules") or []
         if not isinstance(rules, list):
-            raise ValueError("Stored rules data is invalid.")
+            raise TypeError("Stored rules data is invalid.")
         for rule in rules:
             if not isinstance(rule, dict) or not str(rule.get("title", "")).strip() or not str(rule.get("text", "")).strip():
                 raise ValueError("Every rule needs both a title and description.")
@@ -228,13 +229,13 @@ class Rules(commands.Cog):
         channel_id = panel.get("channel_id")
         channel = guild.get_channel(int(channel_id)) if channel_id else None
         if not isinstance(channel, (discord.TextChannel, discord.Thread)):
-            raise ValueError("Choose a valid text channel with a rules panel configured.")
+            raise TypeError("Choose a valid text channel with a rules panel configured.")
         me = guild.me
         if me is None:
-            raise ValueError("FALLEN cannot resolve its server member.")
+            raise ValueError("Junior Atlas cannot resolve its server member.")
         perms = channel.permissions_for(me)
         if not perms.view_channel or not perms.send_messages or not perms.embed_links:
-            raise ValueError("FALLEN needs View Channel, Send Messages, and Embed Links in the rules channel.")
+            raise ValueError("Junior Atlas needs View Channel, Send Messages, and Embed Links in the rules channel.")
         self._validate_panel(panel)
         embeds = [self._embed(panel), self._companion_embed(panel)]
         view = self._view(guild.id, panel)
@@ -280,7 +281,7 @@ class Rules(commands.Cog):
         if isinstance(error, ValueError):
             message = str(error)
         elif isinstance(error, discord.Forbidden):
-            message = "Discord denied the action. Check FALLEN's channel permissions and role hierarchy."
+            message = "Discord denied the action. Check Junior Atlas' channel permissions and role hierarchy."
         elif isinstance(error, discord.HTTPException):
             message = "Discord could not update the rules panel. Check channel permissions and try again."
         else:
@@ -288,7 +289,7 @@ class Rules(commands.Cog):
                 "rules panel operation failed",
                 exc_info=(type(error), error, error.__traceback__),
             )
-            message = "The rules panel operation failed. Check FALLEN's logs."
+            message = "The rules panel operation failed. Check Junior Atlas' logs."
         try:
             if interaction.response.is_done():
                 await interaction.followup.send("❌ " + message, ephemeral=True)
@@ -351,14 +352,14 @@ class Rules(commands.Cog):
                 if old_channel is not None:
                     try:
                         old_message = await old_channel.fetch_message(int(previous["message_id"]))
-                        await old_message.delete(reason="FALLEN rules panel replaced by an administrator")
+                        await old_message.delete(reason="Junior Atlas rules panel replaced by an administrator")
                     except (discord.NotFound, discord.Forbidden):
                         pass
             await self._reply(interaction, 
                 f"Rules panel created in {channel.mention}. Add rules with /rules add and configure all four buttons with /rules button.",
                 ephemeral=True,
             )
-        except Exception as exc:
+        except COMMAND_ERRORS as exc:
             await self._report_error(interaction, exc)
 
     @rules.command(name="add", description="Add a rule written by your administrators")
@@ -377,7 +378,7 @@ class Rules(commands.Cog):
             await self._sync_panel(interaction.guild, panel)
             await self._save_panel(interaction.guild_id, panel)
             await self._reply(interaction, f"Rule {len(panel['rules'])} added and the panel updated.", ephemeral=True)
-        except Exception as exc:
+        except COMMAND_ERRORS as exc:
             await self._report_error(interaction, exc)
 
     @rules.command(name="edit", description="Edit an existing rule by its number")
@@ -404,7 +405,7 @@ class Rules(commands.Cog):
             await self._sync_panel(interaction.guild, panel)
             await self._save_panel(interaction.guild_id, panel)
             await self._reply(interaction, f"Rule {number} edited and the panel updated.", ephemeral=True)
-        except Exception as exc:
+        except COMMAND_ERRORS as exc:
             await self._report_error(interaction, exc)
 
     @rules.command(name="remove", description="Remove a rule by its number")
@@ -426,7 +427,7 @@ class Rules(commands.Cog):
             await self._sync_panel(interaction.guild, panel)
             await self._save_panel(interaction.guild_id, panel)
             await self._reply(interaction, f"Removed rule: {removed['title']}.", ephemeral=True)
-        except Exception as exc:
+        except COMMAND_ERRORS as exc:
             await self._report_error(interaction, exc)
 
     @rules.command(name="button", description="Configure one of the four role-access toggle buttons")
@@ -448,7 +449,7 @@ class Rules(commands.Cog):
         if any(getattr(role.permissions, name, False) for name in DANGEROUS_ROLE_PERMISSIONS):
             return await self._reply(interaction, "That role has elevated permissions and cannot be self-assigned.", ephemeral=True)
         if me is None or not me.guild_permissions.manage_roles or role >= me.top_role:
-            return await self._reply(interaction, "FALLEN needs Manage Roles and a top role above the selected role.", ephemeral=True)
+            return await self._reply(interaction, "Junior Atlas needs Manage Roles and a top role above the selected role.", ephemeral=True)
         if not isinstance(actor, discord.Member) or (guild.owner_id != actor.id and role >= actor.top_role):
             return await self._reply(interaction, "You can only configure roles below your own highest role.", ephemeral=True)
         buttons = panel.setdefault("buttons", [])
@@ -462,7 +463,7 @@ class Rules(commands.Cog):
             await self._sync_panel(guild, panel)
             await self._save_panel(interaction.guild_id, panel)
             await self._reply(interaction, f"Button {slot} is now **{label.strip()}** for {role.mention}. Make sure the role has access only to the intended channels.", ephemeral=True)
-        except Exception as exc:
+        except COMMAND_ERRORS as exc:
             await self._report_error(interaction, exc)
 
     @rules.command(name="publish", description="Publish or refresh the rules panel")
@@ -481,7 +482,7 @@ class Rules(commands.Cog):
             await self._save_panel(interaction.guild_id, panel)
             target = interaction.guild.get_channel(int(panel["channel_id"]))
             await self._reply(interaction, f"Rules panel published or refreshed in {target.mention}.", ephemeral=True)
-        except Exception as exc:
+        except COMMAND_ERRORS as exc:
             await self._report_error(interaction, exc)
 
     @rules.command(name="edit-panel", description="Change the rules panel title or description")
@@ -505,7 +506,7 @@ class Rules(commands.Cog):
             await self._sync_panel(interaction.guild, panel)
             await self._save_panel(interaction.guild_id, panel)
             await self._reply(interaction, "Rules panel title/description updated.", ephemeral=True)
-        except Exception as exc:
+        except COMMAND_ERRORS as exc:
             await self._report_error(interaction, exc)
 
     @rules.command(name="image", description="Attach an image or GIF to the rules embed")
@@ -533,7 +534,7 @@ class Rules(commands.Cog):
             await self._sync_panel(interaction.guild, panel, upload=discord.File(BytesIO(data), filename=filename))
             await self._save_panel(interaction.guild_id, panel)
             await self._reply(interaction, "Image/GIF attached and the panel updated.", ephemeral=True)
-        except Exception as exc:
+        except COMMAND_ERRORS as exc:
             await self._report_error(interaction, exc)
 
     @rules.command(name="image-url", description="Set the rules embed image using an HTTPS URL")
@@ -555,7 +556,7 @@ class Rules(commands.Cog):
             await self._sync_panel(interaction.guild, panel, clear_attachments=True)
             await self._save_panel(interaction.guild_id, panel)
             await self._reply(interaction, "Rules image URL saved and the panel updated.", ephemeral=True)
-        except Exception as exc:
+        except COMMAND_ERRORS as exc:
             await self._report_error(interaction, exc)
 
     @rules.command(name="remove-image", description="Remove the rules embed image")
@@ -574,7 +575,7 @@ class Rules(commands.Cog):
             await self._sync_panel(interaction.guild, panel, clear_attachments=True)
             await self._save_panel(interaction.guild_id, panel)
             await self._reply(interaction, "Rules image removed.", ephemeral=True)
-        except Exception as exc:
+        except COMMAND_ERRORS as exc:
             await self._report_error(interaction, exc)
 
     @rules.command(name="status", description="Show the current rules panel configuration")

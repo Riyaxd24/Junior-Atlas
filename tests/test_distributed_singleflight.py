@@ -1,6 +1,9 @@
 import asyncio
+
 import pytest
+
 from bot.cache.singleflight import DistributedSingleFlight
+
 
 class SharedCache:
     def __init__(self):
@@ -64,7 +67,6 @@ async def test_stale_flight_owner_cannot_overwrite_new_epoch():
     cache.release_fenced_lock = release
     cache.set_json_flight_fenced = fenced_set
 
-    a = DistributedSingleFlight(cache)
     token_a = 'old'
     epoch_a = await cache.acquire_fenced_lock('lock:guild:9', token_a, 'lock:guild:9:epoch', 1000)
     await cache.release_fenced_lock('lock:guild:9', token_a, epoch_a)

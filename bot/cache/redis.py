@@ -1,5 +1,7 @@
 import json
+
 from redis.asyncio import Redis
+
 from bot.core.fencing import current_fence
 from bot.core.metrics import CACHE
 

@@ -1,6 +1,7 @@
 import time
 from collections import defaultdict, deque
 
+
 class AntiRaid:
     """Distributed Redis-backed detector. Local fallback exists only for isolated unit tests."""
     def __init__(self, cache=None):

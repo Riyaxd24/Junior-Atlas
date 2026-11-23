@@ -1,9 +1,14 @@
 from __future__ import annotations
-import io, json
+
+import io
+import json
 from datetime import timedelta
+
 import discord
 from discord.ext import commands
+
 from bot.services.extreme import FEATURES, IMPLEMENTED_FEATURES
+
 
 class Extreme(commands.Cog):
     """Single hybrid interface for the V16 capabilities.
@@ -13,13 +18,13 @@ class Extreme(commands.Cog):
     """
     def __init__(self, bot): self.bot = bot
 
-    @commands.hybrid_group(name='v16', invoke_without_command=True, description='Configure Fallen V16 capabilities')
+    @commands.hybrid_group(name='v16', invoke_without_command=True, description='Configure Junior Atlas V16 capabilities')
     @commands.guild_only()
     async def v16(self, ctx: commands.Context):
         state = await self.bot.extreme.get(ctx.guild.id)
         enabled = sum(bool(state.get(name, False)) for name in IMPLEMENTED_FEATURES)
         await ctx.send(
-            f'⚙️ **Fallen V16:** `{enabled}/{len(IMPLEMENTED_FEATURES)}` implemented capabilities enabled. '
+            f'⚙️ **Junior Atlas V16:** `{enabled}/{len(IMPLEMENTED_FEATURES)}` implemented capabilities enabled. '
             f'The catalog contains 100 entries; unfinished entries cannot be enabled yet. '
             f'Use `{ctx.prefix}v16 help` or `/v16 help`.'
         )

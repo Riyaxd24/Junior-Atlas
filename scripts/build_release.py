@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "dist"
-NAME = "Fallen-v1.0-performance-first.zip"
+NAME = "junior-atlas-0.1.0.zip"
 EXCLUDED_DIRS = {".git", ".venv", "venv", "__pycache__", ".pytest_cache", "htmlcov", "dist"}
 EXCLUDED_FILES = {".coverage", "*.pyc"}
 
@@ -25,8 +25,8 @@ def ignored(path: Path) -> bool:
 def main() -> int:
     OUT.mkdir(exist_ok=True)
     target = OUT / NAME
-    with tempfile.TemporaryDirectory(prefix="fallen-release-") as tmp:
-        staging = Path(tmp) / "fallen"
+    with tempfile.TemporaryDirectory(prefix="junior-atlas-release-") as tmp:
+        staging = Path(tmp) / "junior-atlas"
         for src in ROOT.iterdir():
             if src.name in {"dist", ".git", ".venv", "venv", ".pytest_cache", "htmlcov"}:
                 continue
@@ -49,7 +49,7 @@ def main() -> int:
                     zf.write(p, p.relative_to(staging).as_posix())
 
     with zipfile.ZipFile(target) as zf:
-        bad = [n for n in zf.namelist() if "__pycache__/" in n or n.endswith(".pyc") or n.endswith(".coverage")]
+        bad = [n for n in zf.namelist() if "__pycache__/" in n or n.endswith((".pyc", ".coverage"))]
         if bad:
             raise RuntimeError(f"release contains forbidden artifacts: {bad}")
     print(target)

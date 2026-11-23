@@ -1,5 +1,8 @@
-from bot.services.antiraid import AntiRaid
 import pytest
+
+from bot.services.antiraid import AntiRaid
+
+
 @pytest.mark.asyncio
 async def test_antiraid_threshold():
     a=AntiRaid()
@@ -10,7 +13,7 @@ async def test_antiraid_threshold():
 
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
-import discord
+
 from bot.workers.scheduler import Scheduler
 
 

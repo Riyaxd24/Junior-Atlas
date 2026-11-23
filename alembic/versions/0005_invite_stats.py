@@ -3,8 +3,9 @@
 Revision ID: 0005_invite_stats
 Revises: 0004_greeting_embeds
 """
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
 
 revision = '0005_invite_stats'
 down_revision = '0004'

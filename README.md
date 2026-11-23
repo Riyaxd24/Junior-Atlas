@@ -9,6 +9,56 @@ Junior Atlas keeps Discord-specific presentation thin and uses PostgreSQL as
 the durable source of truth. Redis provides cache and coordination support;
 it can degrade gracefully without PostgreSQL and does not replace PostgreSQL.
 
+## Project status (audit snapshot: 2026-11-23)
+
+This repository is under active development and is **not** a production-complete
+release. Status terms are used consistently across this README and the documents
+in `docs/`:
+
+- **Implemented and tested** — code exists and automated unit/regression tests
+  exercise the behavior. Live Discord integration is still required before
+  claiming production readiness.
+- **Implemented but not integration-tested** — code exists, but only external
+  services or a live Discord guild can validate it end to end.
+- **Partially implemented** — a working subset exists; the remaining behavior is
+  explicitly listed as a limitation.
+- **Planned** — designed or catalogued, but no production implementation exists.
+- **Not implemented** — not present in the runtime.
+
+| Area | Status | Notes |
+|---|---|---|
+| Configuration and startup validation | Implemented and tested | Missing `DISCORD_TOKEN` now fails with an actionable error. |
+| PostgreSQL/Redis infrastructure, migrations, health endpoints | Implemented and tested | Migration execution requires a reachable database. |
+| Moderation core (warn/case/timeout/ban/kick/clear) | Implemented and tested | Live permission and audit-log behavior needs a real guild. |
+| Server logging | Implemented and tested | Listener wiring and persistence covered by tests. |
+| AutoMod core rules and escalation | Partially implemented | Catalog-only rules remain disabled; see `docs/EXTREME_HARDENING.md`. |
+| Welcome/goodbye and rules panel | Implemented and tested | Previously published rules panels must be republished after the rebrand. |
+| Verification, role menus, temporary roles | Partially implemented | Persistence and views exist; full live flows are not integration-tested. |
+| Tickets | Partially implemented | Core lifecycle and V16 metadata exist; add/remove/staff workflows remain incomplete. |
+| Anti-nuke and recovery | Partially implemented | Selected destructive-action defenses exist; many catalog capabilities are disabled. |
+| Economy ledger | Implemented and tested | Service-level ledger and locking tested; Discord shop UI is incomplete. |
+| Leveling and achievements | Implemented and tested | Math, ranks, and achievement records tested. |
+| Games (tic-tac-toe, RPS, trivia) | Implemented and tested | No wagering. |
+| Community/collection/voice/giveaways | Partially implemented | Several foundation models and commands; full workflows are planned. |
+| Music | Implemented but not integration-tested | Requires an external Lavalink v4 node. |
+| Gateway queue, sharding, scheduler, ARQ jobs | Implemented and tested | Multi-process chaos testing against real Redis/PostgreSQL remains required. |
+| Dashboard/control center | Planned (deferred) | Disabled by default; not part of the supported bot runtime. |
+| Dashboard production UI/API | Planned | Do not treat the preview scaffolds as operational. |
+
+## Dashboard status: deferred and disabled
+
+Dashboard development is postponed. `DashboardAPI` is **not** started during
+normal bot startup, and the bot starts without `DASHBOARD_API_KEY` or any
+dashboard credentials.
+
+- `DASHBOARD_ENABLED=false` by default.
+- `bot/web/api.py` is retained in isolation for future work.
+- `control-center/`, `control_center_api/`, and `control-center-api/` are
+  preview scaffolds, not part of the bot runtime.
+- Liveness and readiness endpoints (`/healthz`, `/readyz`) remain active through
+  the separate health server.
+
+
 ## Technology
 
 - Python 3.12+
@@ -36,7 +86,8 @@ it can degrade gracefully without PostgreSQL and does not replace PostgreSQL.
 - `/prefix show`, `/prefix set`, and `/prefix reset`
 - Slash and configurable prefix interfaces
 - Pydantic environment validation
-- Localhost-only control API behavior
+- Health (`/healthz`) and readiness (`/readyz`) endpoints
+- Dashboard API disabled by default; see “Dashboard status” above
 
 ### Moderation
 
@@ -302,9 +353,17 @@ Main directories:
 
 Required application variables:
 
-- `DISCORD_TOKEN`
-- `DATABASE_URL`
-- `REDIS_URL`
+Required to start a usable Discord session:
+
+- `DISCORD_TOKEN` (startup fails with a clear error when missing)
+
+Required for any non-local deployment (defaults point at `localhost`):
+
+- `DATABASE_URL` (`postgresql+asyncpg://`; `postgresql://` and `postgres://` are normalized)
+- `REDIS_URL` (`redis://` or `rediss://`)
+
+Recommended variables:
+
 - `BOT_OWNER_IDS`
 - `LOG_LEVEL`
 - `ENVIRONMENT`
@@ -316,13 +375,22 @@ Important optional variables:
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
 - `POSTGRES_DB`
+- `DB_USE_PGBOUNCER`
+- `SHARD_COUNT`
+- `SHARD_IDS`
+- `INSTANCE_ID`
+- `DASHBOARD_ENABLED` (default `false`; dashboard is deferred)
 - `DASHBOARD_HOST`
 - `DASHBOARD_PORT`
-- `DASHBOARD_API_KEY`
+- `DASHBOARD_API_KEY` (only needed if the deferred dashboard is explicitly enabled)
 - `LAVALINK_URL`
 - `LAVALINK_PASSWORD`
-- `OTEL_EXPORTER_OTLP_ENDPOINT`
 - `OTEL_ENABLED`
+- `OTEL_SERVICE_NAME`
+- `OTEL_EXPORTER_OTLP_ENDPOINT`
+
+See `.env.example` for the full, validated list. Empty optional values are
+normalized (`SHARD_COUNT=`, `INSTANCE_ID=`, and `GUILD_ID=0` are treated as unset).
 
 Never commit `.env`, Discord tokens, database passwords, Redis credentials,
 API keys, or Lavalink passwords.
@@ -424,11 +492,19 @@ them in production.
 
 ## Known limitations
 
+- **Licensing blocker:** upstream FALLEN has no license, so this derivative is
+  All rights reserved and must not be publicly redistributed without written
+  permission. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).
 - Live Discord login requires credentials supplied by the repository owner.
 - Discord slash commands are subject to Discord's global command limit.
 - Advanced M5-M10 features are foundations/checkpoints and require live-server testing.
 - Real Giveaway reroll, full temp-voice ownership controls, and some M10 workflows
   remain manual checkpoints rather than a complete production UI.
+- The dashboard is deferred and disabled by default. The preview scaffolds are
+  not supported runtime components.
+- Previously published rules-panel messages use the old custom-ID prefix and
+  must be republished once after the rebrand. Existing ticket channels remain
+  readable through legacy topic compatibility.
 - Lavalink requires an external provider.
 - Translation providers require explicit configuration.
 - Rank-card images require an optional image-generation path.
@@ -439,16 +515,22 @@ them in production.
 - [Architecture](docs/ARCHITECTURE.md)
 - [Specification summary](docs/SPEC.md)
 - [Feature matrix](docs/FEATURE_MATRIX.md)
-- [Audit](docs/AUDIT.md)
+- [Audit (historical Stage 0 + current addendum)](docs/AUDIT.md)
 - [Compliance checklist](docs/COMPLIANCE_CHECKLIST.md)
-- [Progress](docs/PROGRESS.md)
-- [Final report](docs/FINAL_REPORT.md)
+- [Progress (historical log + current status)](docs/PROGRESS.md)
+- [Final report (historical snapshot)](docs/FINAL_REPORT.md)
 - [Manual tests](docs/MANUAL_TESTS.md)
-- [Notice](NOTICE.md)
+- [License status](LICENSE)
+- [Notice and attribution](NOTICE.md)
 
 ## Attribution
 
-Junior Atlas is derived from [FALLEN](https://github.com/NOAH-NULL/FALLEN).
-FALLEN copyright and license notices are preserved in
-[NOTICE.md](NOTICE.md). No LICENSE file was found during the Stage 0 audit;
-the repository owner must provide or confirm license text in a future milestone.
+Junior Atlas is derived from [FALLEN](https://github.com/NOAH-NULL/FALLEN),
+copyright (c) 2026 NOAH-NULL and FALLEN contributors.
+
+The upstream repository contains no LICENSE, COPYING, or NOTICE file and no
+license metadata. Under copyright law that means the upstream work is
+**All rights reserved**; this derivative cannot be relicensed or publicly
+distributed without written permission from the upstream copyright holder.
+The full finding and required follow-up action are documented in
+[LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).

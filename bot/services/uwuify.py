@@ -1,6 +1,7 @@
 from __future__ import annotations
-import re
+
 import random
+import re
 
 _URL = re.compile(r'https?://\S+|<@!?\d+>|<#\d+>|<@&\d+>|`[^`]*`')
 _WORD = re.compile(r"[A-Za-z]+(?:'[A-Za-z]+)?")
@@ -21,13 +22,10 @@ class UwuifyService:
         out = re.sub(r'(?i)ove', 'owe', out)
         out = re.sub(r'(?i)er\b', 'ew', out)
         out = re.sub(r'(?i)or\b', 'ow', out)
-        out = re.sub(r'(?i)th', lambda m: 'th' if len(word) <= 3 else 'th', out)
         # Stutter mostly on the first consonant/vowel, with bounded intensity.
         if len(low) >= 3 and rng.random() < 0.34 and word[0].isalpha():
             first = out[0]
-            if first.lower() not in 'aeiou':
-                out = f'{first}-{first}-{out}'
-            elif rng.random() < 0.45:
+            if first.lower() not in 'aeiou' or rng.random() < 0.45:
                 out = f'{first}-{first}-{out}'
         # Stretch a vowel in a controlled way.
         if len(out) >= 4 and rng.random() < 0.28:

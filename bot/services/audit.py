@@ -1,4 +1,6 @@
 import discord
+
+
 async def send_log(guild,config,title,description):
     cid=config.get('log_channel_id')
     if not cid:return

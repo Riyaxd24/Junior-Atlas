@@ -1,0 +1,46 @@
+# Licensing status
+
+Copyright (c) 2026 NOAH-NULL and FALLEN contributors.
+Copyright (c) 2026 Junior Atlas contributors.
+
+## No license was granted by the upstream project
+
+Junior Atlas is a derivative of the FALLEN Discord bot:
+
+- Project: FALLEN
+- Repository: https://github.com/NOAH-NULL/FALLEN
+- Snapshot audited: commit `31c7e35` (default branch `main`)
+
+As of the 2026-11-23 audit, the upstream repository contains **no LICENSE,
+COPYING, or NOTICE file**, has no license metadata in the GitHub API
+(`"license": null`), and has no license file anywhere in its commit history.
+The upstream README says "See the repository license file for the current
+licensing terms," but no such file exists.
+
+Under copyright law, the absence of a license means that the upstream author
+retains **all rights**. No permission is granted to copy, modify, sublicense,
+or redistribute the upstream work, except for rights that GitHub's Terms of
+Service independently provide to users of the GitHub service (for example,
+viewing and forking within GitHub).
+
+## Effect on this repository
+
+This file is a factual notice. It is **not** an open-source license and it
+does not grant any rights that the upstream copyright holder has not granted.
+
+- The Junior Atlas modifications are likewise **All rights reserved**.
+- Do not publish, distribute, sell, or sublicense this repository or a built
+  artifact publicly until the repository owner has obtained written permission
+  from the FALLEN copyright holder or the upstream project is released under a
+  compatible license.
+- If upstream later publishes a license, this file and `NOTICE.md` must be
+  updated and the upstream license text preserved verbatim.
+- Existing attribution and copyright notices in `NOTICE.md` must be retained in
+  source distributions and derivative works.
+
+## Third-party software
+
+Junior Atlas depends on third-party Python packages that remain under their own
+licenses. See `NOTICE.md` for the principal dependencies. Installing or
+distributing those packages does not relicense them, and their bundled license
+texts continue to apply.

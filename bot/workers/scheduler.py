@@ -1,5 +1,8 @@
-import asyncio, logging
+import asyncio
+import logging
+
 import discord
+
 log=logging.getLogger('bot.scheduler')
 class Scheduler:
     def __init__(self,bot,interval=5): self.bot=bot; self.interval=interval; self.task=None; self.stop=asyncio.Event()
@@ -7,7 +10,7 @@ class Scheduler:
         if self.task and not self.task.done():
             return
         self.stop.clear()
-        self.task=asyncio.create_task(self.run(), name='fallen-scheduler')
+        self.task=asyncio.create_task(self.run(), name='junior-atlas-scheduler')
     async def run(self):
         while not self.stop.is_set():
             try:

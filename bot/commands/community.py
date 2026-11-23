@@ -1,7 +1,8 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from bot.ui import info_embed, success_embed, error_embed
+
+from bot.ui import error_embed, info_embed, success_embed
 
 
 class Community(commands.Cog):
@@ -130,7 +131,7 @@ class Community(commands.Cog):
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(member='Member receiving XP', amount='Amount of XP to add')
     async def xp_add(self, i, member: discord.Member, amount: app_commands.Range[int, 1, 1000000]):
-        old_level, new_level, xp, total = await self.bot.levels.modify_xp(i.guild_id, member.id, amount)
+        _, new_level, _, total = await self.bot.levels.modify_xp(i.guild_id, member.id, amount)
         await i.response.send_message(embed=success_embed('XP added', f'{member.mention} received **{amount:,} XP**.\nLevel: **{new_level}** • Total XP: **{total:,}**'), ephemeral=True)
 
     @app_commands.command(name='xp-remove', description='Remove XP from a member')
@@ -138,7 +139,7 @@ class Community(commands.Cog):
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(member='Member losing XP', amount='Amount of XP to remove')
     async def xp_remove(self, i, member: discord.Member, amount: app_commands.Range[int, 1, 1000000]):
-        old_level, new_level, xp, total = await self.bot.levels.modify_xp(i.guild_id, member.id, -amount)
+        _, new_level, _, total = await self.bot.levels.modify_xp(i.guild_id, member.id, -amount)
         await i.response.send_message(embed=success_embed('XP removed', f'{member.mention} lost **{amount:,} XP**.\nLevel: **{new_level}** • Total XP: **{total:,}**'), ephemeral=True)
 
     @app_commands.command(name='xp-set', description='Set a member total XP value')
@@ -146,7 +147,7 @@ class Community(commands.Cog):
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(member='Member to update', amount='New total XP value')
     async def xp_set(self, i, member: discord.Member, amount: app_commands.Range[int, 0, 10000000]):
-        old_level, new_level, xp, total = await self.bot.levels.modify_xp(i.guild_id, member.id, amount, set_value=True)
+        _, new_level, _, total = await self.bot.levels.modify_xp(i.guild_id, member.id, amount, set_value=True)
         await i.response.send_message(embed=success_embed('XP set', f'{member.mention} now has **{total:,} total XP**.\nLevel: **{new_level}**'), ephemeral=True)
 
     @app_commands.command(name='level-bonus', description='Give a role a leveling XP multiplier')
@@ -247,7 +248,7 @@ class Community(commands.Cog):
         embed.add_field(name='Roles', value=f'**{len(g.roles):,}**', inline=True)
         embed.add_field(name='Owner', value=g.owner.mention if g.owner else 'Unknown', inline=True)
         embed.add_field(name='Server ID', value=f'`{g.id}`', inline=True)
-        embed.set_footer(text=f'Fallen • {g.name}')
+        embed.set_footer(text=f'Junior Atlas • {g.name}')
         await i.response.send_message(embed=embed)
 
     @app_commands.command(name='avatar', description='Show a member avatar')
@@ -256,7 +257,7 @@ class Community(commands.Cog):
         m = member or i.user
         embed = info_embed(f'{m.display_name} • Avatar', f'Viewing the current avatar for {m.mention}.')
         embed.set_image(url=m.display_avatar.url)
-        embed.set_footer(text='Fallen • Avatar viewer')
+        embed.set_footer(text='Junior Atlas • Avatar viewer')
         await i.response.send_message(embed=embed)
 
 

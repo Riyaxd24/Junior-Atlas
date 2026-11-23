@@ -1,6 +1,6 @@
-# FALLEN Control Center
+# Junior Atlas Control Center
 
-A responsive React + Vite dashboard scaffold for the FALLEN Discord bot. The current interface is deliberately in **preview mode**: sample activity is illustrative, status metrics are not live, and security switches do not save settings.
+A responsive React + Vite dashboard scaffold for the Junior Atlas Discord bot. The current interface is deliberately in **preview mode**: sample activity is illustrative, status metrics are not live, and security switches do not save settings.
 
 ## Run locally
 
@@ -25,7 +25,7 @@ npm run preview
 - Overview, navigation, sample activity search, quick actions, and preview toggles
 - Explicit preview-mode messaging; no fake live metrics or successful mutations
 - Discord connection setup guidance
-- The UI is not yet wired to FALLEN's PostgreSQL/Redis state or Discord OAuth
+- The UI is not yet wired to Junior Atlas's PostgreSQL/Redis state or Discord OAuth
 
 ## Next integration steps
 
@@ -45,7 +45,7 @@ This directory can be deployed as a static Vite site (for example, a Vercel proj
 
 - `GET /api/health` — API health only
 - `GET /api/auth/me` — current signed-in identity
-- `GET /api/guilds` — guilds the signed-in user may manage and where FALLEN is installed
+- `GET /api/guilds` — guilds the signed-in user may manage and where Junior Atlas is installed
 - `GET /api/guilds/{guild_id}/overview` — verified guild overview
 - `PATCH /api/guilds/{guild_id}/settings` — validated, authorized configuration update
 

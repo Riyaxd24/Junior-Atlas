@@ -1,6 +1,8 @@
 """Add persistent V16 extreme feature configuration."""
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
+
 revision="0008_extreme_settings"
 down_revision="0007_runtime_schema"
 branch_labels=None

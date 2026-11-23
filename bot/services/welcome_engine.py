@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import discord
-
 
 DEFAULT_SETTINGS = {
     "enabled": True,
@@ -154,7 +153,7 @@ class WelcomeEngine:
         if not created:
             return None
         try:
-            return max(0, (datetime.now(timezone.utc) - created).days)
+            return max(0, (datetime.now(UTC) - created).days)
         except (TypeError, ValueError):
             return None
 
@@ -202,7 +201,7 @@ class WelcomeEngine:
         if not roles:
             return 0
         try:
-            await member.add_roles(*roles, reason="Fallen advanced welcome auto-role")
+            await member.add_roles(*roles, reason="Junior Atlas advanced welcome auto-role")
             return len(roles)
         except discord.HTTPException:
             self.bot.log.warning("advanced welcome auto-role failed guild=%s member=%s", guild.id, member.id, exc_info=True)

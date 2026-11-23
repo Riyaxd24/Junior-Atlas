@@ -1,5 +1,6 @@
 from pathlib import Path
 
+
 def test_heat_engine_has_atomic_decay_and_factors():
     s=Path('bot/services/automod.py').read_text()
     assert 'math.exp' in s and 'HEAT_SCRIPT' in s

@@ -1,7 +1,9 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
+
 from bot.ui import info_embed
+
 
 class Invites(commands.Cog):
     def __init__(self, bot): self.bot = bot
@@ -28,7 +30,7 @@ class Invites(commands.Cog):
         warning = self._tracking_permission_warning(i)
         if warning:
             embed.add_field(name="Tracking setup", value=warning, inline=False)
-        embed.set_footer(text='Fallen • Invite tracking')
+        embed.set_footer(text='Junior Atlas • Invite tracking')
         await i.response.send_message(embed=embed)
 
     @app_commands.command(name='inviteleaderboard', description='Show the server invite leaderboard')
@@ -46,7 +48,7 @@ class Invites(commands.Cog):
         warning = self._tracking_permission_warning(i)
         if warning:
             embed.add_field(name="Tracking setup", value=warning, inline=False)
-        embed.set_footer(text='Fallen • Top 10 inviters')
+        embed.set_footer(text='Junior Atlas • Top 10 inviters')
         await i.response.send_message(embed=embed)
 
 async def setup(bot): await bot.add_cog(Invites(bot))

@@ -1,5 +1,6 @@
 from pathlib import Path
-from bot.services.extreme import FEATURES, DEFAULTS, ExtremeService
+
+from bot.services.extreme import DEFAULTS, FEATURES, ExtremeService
 
 
 def test_every_catalog_feature_has_runtime_default():

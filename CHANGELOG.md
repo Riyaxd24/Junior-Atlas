@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Audit and repair (2026-11-23)
+
+- Restored `LICENSE` and `NOTICE.md` with the accurate upstream licensing finding and
+  preserved FALLEN attribution.
+- Rebranded active runtime, tests, scripts, and deferred dashboard scaffolds to Junior Atlas.
+- Disabled the dashboard during bot startup by default and preserved health/readiness.
+- Removed duplicate environment entries, corrected `OTEL_SERVICE_NAME`, and added settings
+  validation plus a clear missing-token startup error.
+- Reconciled status documentation and marked historical audit reports.
+
 ### Stage 0
 
 - Added a reproducible audit, compliance checklist, progress log, specification summary,

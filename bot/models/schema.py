@@ -1,6 +1,20 @@
-from sqlalchemy import BigInteger, Boolean, DateTime, Integer, LargeBinary, String, Text, UniqueConstraint, func, JSON
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from datetime import datetime
+
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Boolean,
+    DateTime,
+    Integer,
+    LargeBinary,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+
 class Base(DeclarativeBase): pass
 class GuildConfig(Base):
     __tablename__='guild_configs'

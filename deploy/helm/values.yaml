@@ -1,6 +1,6 @@
 replicaCount: 2
 image:
-  repository: discord-bot
+  repository: junior-atlas
   tag: stable
 ports:
   health: 8080
@@ -20,7 +20,7 @@ pgbouncer:
   replicas: 2
   postgresHost: postgres
   # Inject a real SCRAM userlist through the deployment secret in production.
-  userlist: '"discordbot" "CHANGE_ME"'
+  userlist: '"junior_atlas" "CHANGE_ME"'
   maxClientConn: 1000
   defaultPoolSize: 20
   minPoolSize: 5

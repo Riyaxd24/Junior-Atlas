@@ -1,10 +1,12 @@
-import string
 import logging
 import re
+import string
 from urllib.parse import urlsplit
+
 import discord
 from discord import app_commands, ui
 from discord.ext import commands
+
 from bot.models import GuildConfig
 
 log = logging.getLogger(__name__)
@@ -234,7 +236,7 @@ class Greeting(commands.Cog):
             
         return (len(missing) == 0, ', '.join(missing))
 
-    def _format_placeholders(self, template: str, member: discord.Member, extra: dict = None) -> str:
+    def _format_placeholders(self, template: str, member: discord.Member, extra: dict | None = None) -> str:
         if not template:
             return ""
 
@@ -268,16 +270,16 @@ class Greeting(commands.Cog):
         }
         try:
             return template.format(**replacements)
-        except Exception as e:
+        except (KeyError, IndexError, ValueError, AttributeError) as e:
             log.warning("Failed formatting template string '%s': %s", template, e)
             return template
 
-    def build_embed(self, kind: str, member: discord.Member, cfg: dict, extra: dict = None) -> discord.Embed:
+    def build_embed(self, kind: str, member: discord.Member, cfg: dict, extra: dict | None = None) -> discord.Embed:
         # Advanced options are persisted in the JSON settings column.
         cfg = {**cfg, **(cfg.get("welcome_settings") or {})}
         guild_name = member.guild.name
         
-        msg_template = cfg.get(f'{kind}_message', f'Welcome {{mention}} to {{server}}!')
+        msg_template = cfg.get(f'{kind}_message', 'Welcome {mention} to {server}!')
         embed_title = cfg.get(f'{kind}_embed_title', f'Welcome to {guild_name}')
         embed_color = parse_color(cfg.get(f'{kind}_embed_color'))
         image_template = cfg.get(f'{kind}_image_url', '')
@@ -403,7 +405,7 @@ class Greeting(commands.Cog):
                 ephemeral=True
             )
         else:
-            msg_template = cfg.get(f'{kind}_message', f'Welcome {{mention}} to {{server}}!')
+            msg_template = cfg.get(f'{kind}_message', 'Welcome {mention} to {server}!')
             formatted_msg = self._format_placeholders(msg_template, interaction.user)
             await interaction.response.send_message(
                 content=f"👀 **[Preview] {kind.title()} Message:**\n{formatted_msg}",

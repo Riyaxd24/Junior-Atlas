@@ -5,7 +5,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 SECRET_PATTERNS = (
     re.compile(r"(?i)(discord[_-]?token|bot[_-]?token)\s*=\s*[^\s<]{20,}"),
     re.compile(r"""(?i)(password|api[_-]?key|secret)\s*=\s*["'][A-Za-z0-9+/_.~-]{12,}["']"""),

@@ -5,7 +5,6 @@ from typing import Any
 
 import discord
 
-
 log = logging.getLogger("bot.interactions")
 
 

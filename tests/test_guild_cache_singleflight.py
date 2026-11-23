@@ -1,6 +1,9 @@
 import asyncio
+
 import pytest
+
 from bot.services.guild_config import GuildConfigService
+
 
 class Cache:
     def __init__(self): self.data = {}; self.locked = False; self.sets = 0

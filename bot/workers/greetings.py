@@ -6,8 +6,6 @@ from urllib.parse import urlsplit
 import discord
 
 from bot.core.metrics import WORK_QUEUE
-from bot.services.welcome_engine import DEFAULT_SETTINGS
-
 
 DEFAULT_MESSAGES = {
     "welcome": "Welcome {mention} to {server}! You are member #{count}.",

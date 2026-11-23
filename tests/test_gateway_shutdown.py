@@ -1,6 +1,7 @@
-import asyncio
 import pytest
+
 from bot.core.event_queue import GatewayEventQueue
+
 
 @pytest.mark.asyncio
 async def test_queue_stops_accepting_and_drains():

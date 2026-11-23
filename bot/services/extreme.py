@@ -1,13 +1,25 @@
 from __future__ import annotations
-from copy import deepcopy
-from datetime import datetime, timezone, timedelta
-import re
+
 import time
+from copy import deepcopy
+from datetime import UTC, datetime, timedelta
 from urllib.parse import urlparse
+
 import regex as safe_regex
-from sqlalchemy import delete, select, func, or_
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from bot.models import GuildConfig, FeatureRecord, SecurityEvent, ScheduledAction, AutoModRule, MemberProfile, Reputation, Playlist, Ticket, ConfigSnapshot
+
+from bot.models import (
+    AutoModRule,
+    ConfigSnapshot,
+    GuildConfig,
+    MemberProfile,
+    Playlist,
+    Reputation,
+    ScheduledAction,
+    SecurityEvent,
+    Ticket,
+)
 
 FEATURES = {
     "security": ["anti_bot_join","account_age_verification","suspicious_username","raid_join_rate","automatic_lockdown","lockdown_recovery","anti_channel_delete","anti_role_delete","anti_webhook_abuse","anti_permission_escalation","anti_mass_ban","security_timeline","trusted_admin_allowlist","owner_emergency_lockdown","security_backup"],
@@ -37,7 +49,7 @@ IMPLEMENTED_FEATURES = {
     "server_reputation", "member_profiles", "personal_playlists",
 }
 DEFAULTS = {name: False for name in ALL_FEATURES}
-for _name in {"server_reputation", "member_profiles", "personal_playlists"}:
+for _name in ("server_reputation", "member_profiles", "personal_playlists"):
     DEFAULTS[_name] = True
 
 class ExtremeService:
@@ -81,7 +93,7 @@ class ExtremeService:
         if key not in ALL_FEATURES:
             raise ValueError(f"Unknown V16 feature: {key}")
         if not isinstance(value, bool):
-            raise ValueError("Feature state must be a boolean")
+            raise TypeError("Feature state must be a boolean")
         enabled = value
         if key not in IMPLEMENTED_FEATURES and enabled:
             raise ValueError(
@@ -97,19 +109,15 @@ class ExtremeService:
     async def enabled(self, guild_id: int, key: str) -> bool:
         return bool((await self.get(guild_id)).get(key, False))
     async def snapshot(self, guild_id: int) -> dict:
-        return {"guild_id": guild_id, "created_at": datetime.now(timezone.utc).isoformat(), "features": await self.get(guild_id)}
+        return {"guild_id": guild_id, "created_at": datetime.now(UTC).isoformat(), "features": await self.get(guild_id)}
     async def restore_features(self, guild_id: int, features) -> dict:
         """Atomically restore supported boolean feature flags from a snapshot."""
         if not isinstance(features, dict):
-            raise ValueError("Snapshot features must be an object")
+            raise TypeError("Snapshot features must be an object")
         clean = {}
         skipped = []
         for key, value in features.items():
-            if key not in ALL_FEATURES:
-                skipped.append(str(key))
-            elif key not in IMPLEMENTED_FEATURES:
-                skipped.append(str(key))
-            elif not isinstance(value, bool):
+            if key not in ALL_FEATURES or key not in IMPLEMENTED_FEATURES or not isinstance(value, bool):
                 skipped.append(str(key))
             else:
                 clean[key] = value
@@ -164,7 +172,7 @@ class ExtremeService:
         Claims are recoverable after a crash, so a second instance can take
         over stale work without allowing concurrent duplicate execution.
         """
-        now=now or datetime.now(timezone.utc)
+        now=now or datetime.now(UTC)
         stale=now-timedelta(minutes=10)
         async with self.db.session() as s:
             result=await s.execute(
@@ -437,7 +445,7 @@ class ExtremeService:
             if not row: return None
             for k,v in changes.items():
                 if hasattr(row,k): setattr(row,k,v)
-            if changes.get('status')=='closed': row.closed_at=datetime.now(timezone.utc)
+            if changes.get('status')=='closed': row.closed_at=datetime.now(UTC)
             await s.commit(); return row
     async def tickets(self,guild_id,status=None):
         async with self.db.session() as s:

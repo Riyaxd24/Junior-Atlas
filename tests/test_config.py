@@ -8,14 +8,14 @@ def test_settings(monkeypatch):
 def test_float_environment_setting_falls_back_for_invalid_and_nonfinite_values(monkeypatch):
     from bot.core.config import _f
 
-    monkeypatch.setenv("FALLEN_TEST_FLOAT", "not-a-number")
-    assert _f("FALLEN_TEST_FLOAT", 2.5) == 2.5
-    monkeypatch.setenv("FALLEN_TEST_FLOAT", "nan")
-    assert _f("FALLEN_TEST_FLOAT", 2.5) == 2.5
-    monkeypatch.setenv("FALLEN_TEST_FLOAT", "inf")
-    assert _f("FALLEN_TEST_FLOAT", 2.5) == 2.5
-    monkeypatch.setenv("FALLEN_TEST_FLOAT", "1.25")
-    assert _f("FALLEN_TEST_FLOAT", 2.5) == 1.25
+    monkeypatch.setenv("JUNIOR_ATLAS_TEST_FLOAT", "not-a-number")
+    assert _f("JUNIOR_ATLAS_TEST_FLOAT", 2.5) == 2.5
+    monkeypatch.setenv("JUNIOR_ATLAS_TEST_FLOAT", "nan")
+    assert _f("JUNIOR_ATLAS_TEST_FLOAT", 2.5) == 2.5
+    monkeypatch.setenv("JUNIOR_ATLAS_TEST_FLOAT", "inf")
+    assert _f("JUNIOR_ATLAS_TEST_FLOAT", 2.5) == 2.5
+    monkeypatch.setenv("JUNIOR_ATLAS_TEST_FLOAT", "1.25")
+    assert _f("JUNIOR_ATLAS_TEST_FLOAT", 2.5) == 1.25
 
 
 import pytest

@@ -1,5 +1,6 @@
 from bot.services.uwuify import UwuifyService
 
+
 def test_uwuify_is_strong_and_preserves_links():
     out = UwuifyService.transform("I don't want to go to school today https://example.com", seed=7)
     assert 'https://example.com' in out

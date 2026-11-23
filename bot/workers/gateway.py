@@ -2,8 +2,9 @@ import asyncio
 import logging
 import time
 from collections import deque
+
 from bot.core.event_queue import GatewayEventQueue
-from bot.core.fencing import push_fence, pop_fence, current_fence
+from bot.core.fencing import pop_fence, push_fence
 from bot.core.metrics import EVENTS
 
 log = logging.getLogger('bot.gateway_worker')

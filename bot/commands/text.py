@@ -5,14 +5,19 @@ Friendly reaction commands return GIFs; administrative commands remain permissio
 checked and use the same service/database layer as their slash counterparts.
 """
 from __future__ import annotations
+
 import random
 from datetime import timedelta
+
 import discord
 from discord.ext import commands
 from sqlalchemy import text
+
 from bot.commands.fun import SAFE_ACTIONS
 from bot.services.music import MusicError
+from bot.services.tickets import ticket_owner_id
 from bot.ui import error_embed, info_embed, success_embed, warning_embed
+
 
 class TextCommands(commands.Cog):
     def __init__(self, bot): self.bot=bot
@@ -28,7 +33,7 @@ class TextCommands(commands.Cog):
         description = f'{ctx.author.mention} {verb} themselves!' if target.id == ctx.author.id else f'{ctx.author.mention} {verb} {target.mention}!'
         embed = info_embed(f'{emoji} {action.title()}', description)
         if url: embed.set_image(url=url)
-        embed.set_footer(text='Fallen • Fun & community • Prefix: ,')
+        embed.set_footer(text='Junior Atlas • Fun & community • Prefix: ,')
         await ctx.send(embed=embed)
 
     @commands.command(name='uwuify')
@@ -241,7 +246,7 @@ class TextCommands(commands.Cog):
     # Utility/community
     @commands.command(name='ping')
     async def ping(self,ctx):
-        e=info_embed('🏓 Pong!', 'Fallen is online and responding.')
+        e=info_embed('🏓 Pong!', 'Junior Atlas is online and responding.')
         e.add_field(name='Gateway',value=f'`{self.bot.latency*1000:.0f} ms`'); e.add_field(name='Prefix',value='`,`')
         await ctx.send(embed=e)
     @commands.command(name='health')
@@ -340,7 +345,7 @@ class TextCommands(commands.Cog):
     @commands.command(name='daily')
     @commands.guild_only()
     async def daily(self,ctx):
-        from bot.ui import success_embed, error_embed
+        from bot.ui import error_embed, success_embed
         allowed=await self.bot.limiter.allow(f'daily:{ctx.guild.id}:{ctx.author.id}',1,86400)
         if not allowed:
             return await ctx.send(embed=error_embed('Daily already claimed','You can claim the reward again after the cooldown resets.'))
@@ -422,11 +427,7 @@ class TextCommands(commands.Cog):
             return await ctx.send('This is not a ticket channel.')
         owner_id = None
         topic = getattr(ctx.channel, 'topic', None) or ''
-        if 'fallen-ticket-owner:' in topic:
-            try:
-                owner_id = int(topic.split('fallen-ticket-owner:', 1)[1].split()[0])
-            except (ValueError, IndexError):
-                owner_id = None
+        owner_id = ticket_owner_id(topic)
         is_manager = bool(ctx.author.guild_permissions.manage_channels)
         if not is_manager and owner_id != ctx.author.id:
             return await ctx.send('Only the ticket creator or a channel manager can close this ticket.')

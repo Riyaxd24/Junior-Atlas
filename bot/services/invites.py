@@ -1,11 +1,13 @@
 from __future__ import annotations
+
 import asyncio
-import json
 import logging
 import uuid
 from dataclasses import dataclass
-from sqlalchemy import text, select
+
 import discord
+from sqlalchemy import select, text
+
 from bot.models import InviteStat
 
 log = logging.getLogger('bot.invites')
@@ -79,7 +81,7 @@ class InviteTracker:
         if self._join_queue is not None:
             try:
                 await asyncio.wait_for(self._join_queue.join(), 5.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 log.warning('invite join queue did not drain before shutdown')
         for task in (self._join_task, self._flush_task, self._attr_task):
             if task:

@@ -1,6 +1,8 @@
 """Add warning points and expiration."""
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
+
 revision='0010_warning_expiration'; down_revision='0009_v16_capabilities'; branch_labels=None; depends_on=None
 
 def upgrade():
