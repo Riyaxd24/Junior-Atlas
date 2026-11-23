@@ -1,5 +1,5 @@
 [project]
-name = "discord-bot-v3"
+name = "junior-atlas"
 version = "0.1.0"
 requires-python = ">=3.12,<3.15"
 
