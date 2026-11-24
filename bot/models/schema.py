@@ -53,6 +53,7 @@ class GuildConfig(Base):
     created_at:Mapped[datetime]=mapped_column(DateTime(timezone=True),server_default=func.now())
     updated_at:Mapped[datetime]=mapped_column(DateTime(timezone=True),server_default=func.now(),onupdate=func.now())
     extreme_settings:Mapped[dict]=mapped_column(JSON,default=dict,nullable=False)
+    security_settings:Mapped[dict]=mapped_column(JSON,default=dict,nullable=False)
 class Warning(Base):
     __tablename__='warnings'
     id:Mapped[int]=mapped_column(Integer,primary_key=True,autoincrement=True)

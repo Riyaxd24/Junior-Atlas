@@ -1,7 +1,5 @@
 # NOTICE
 
-### Upstream licensing finding
-
 The upstream repository has **no LICENSE, COPYING, or NOTICE file** and no
 license metadata (`"license": null` in the GitHub API). A history search found
 no license file in any upstream commit. The upstream README references a
