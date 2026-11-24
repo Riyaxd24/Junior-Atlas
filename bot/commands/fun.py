@@ -527,6 +527,20 @@ class Fun(commands.Cog):
         if view is not None and message is not None:
             view.message = message
 
+    @staticmethod
+    async def _ephemeral_reply(ctx_or_interaction, text: str) -> None:
+        """Reply privately to either a prefix context or a slash interaction."""
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            try:
+                if ctx_or_interaction.response.is_done():
+                    await ctx_or_interaction.followup.send(text, ephemeral=True)
+                else:
+                    await ctx_or_interaction.response.send_message(text, ephemeral=True)
+            except discord.HTTPException:
+                log.warning("could not send interaction error reply", exc_info=True)
+            return
+        await ctx_or_interaction.send(text, ephemeral=True)
+
     async def _handle_cmd(
         self,
         ctx_or_interaction: commands.Context | discord.Interaction,
@@ -536,7 +550,7 @@ class Fun(commands.Cog):
         ctx = ctx_or_interaction
         guild_marker = getattr(ctx, "guild", object())
         if guild_marker is None:
-            await ctx.send("These commands only work in servers.", ephemeral=True)
+            await self._ephemeral_reply(ctx, "These commands only work in servers.")
             return
 
         target = self._resolve_target(ctx, member)
@@ -544,7 +558,7 @@ class Fun(commands.Cog):
         replied = bool(message and getattr(message, "reference", None))
 
         if member is None and replied and target is None:
-            await ctx.send("I couldn't find that person in this server.", ephemeral=True)
+            await self._ephemeral_reply(ctx, "I couldn't find that person in this server.")
             return
 
         if (
@@ -553,11 +567,11 @@ class Fun(commands.Cog):
             and hasattr(guild_marker, "id")
             and target.guild.id != guild_marker.id
         ):
-            await ctx.send("I couldn't find that person in this server.", ephemeral=True)
+            await self._ephemeral_reply(ctx, "I couldn't find that person in this server.")
             return
 
         if target is not None and getattr(target, "bot", False):
-            await ctx.send("You can't do that to a bot!", ephemeral=True)
+            await self._ephemeral_reply(ctx, "You can't do that to a bot!")
             return
 
         await self._execute_action(ctx, action, target)
@@ -601,7 +615,19 @@ class Fun(commands.Cog):
             raise error
 
 
+# The most frequently used actions keep their dedicated top-level slash command.
+# Discord limits an application to 100 top-level commands and this bot already
+# uses most of that budget, so every other action is reachable through the
+# single ``/action`` command below instead of silently failing to register.
+PRIMARY_SLASH_ACTIONS = ("hug", "pat", "poke", "bonk", "slap", "cuddle", "wave", "highfive")
+SECONDARY_SLASH_ACTIONS = tuple(
+    action for action in SAFE_ACTIONS if action != "fuck"
+)
+
+
 def make_action_slash_callback(cog, action):
+    # The first parameter is the interaction and is never exposed as an option.
+    # ``member`` stays optional so both ``/hug`` and ``/hug member:@user`` work.
     async def slash_callback(
         interaction: discord.Interaction,
         member: discord.Member | None = None,
@@ -609,13 +635,33 @@ def make_action_slash_callback(cog, action):
         await cog._handle_cmd(interaction, action, member)
 
     slash_callback.__name__ = action
+    slash_callback = discord.app_commands.guild_only()(slash_callback)
     return slash_callback
+
+
+def make_action_selector_callback(cog):
+    async def action_callback(
+        interaction: discord.Interaction,
+        action: str,
+        member: discord.Member | None = None,
+    ):
+        await cog._handle_cmd(interaction, action, member)
+
+    action_callback.__name__ = "action"
+    action_callback = discord.app_commands.choices(
+        action=[
+            discord.app_commands.Choice(name=value.title(), value=value)
+            for value in SECONDARY_SLASH_ACTIONS
+        ]
+    )(action_callback)
+    action_callback = discord.app_commands.guild_only()(action_callback)
+    return action_callback
 
 
 async def setup(bot):
     await bot.add_cog(Fun(bot))
     cog = bot.get_cog("Fun")
-    for action_name in ("hug", "pat", "poke", "bonk", "slap", "cuddle", "wave", "highfive"):
+    for action_name in PRIMARY_SLASH_ACTIONS:
         slash_callback = make_action_slash_callback(cog, action_name)
         slash_command = discord.app_commands.Command(
             name=action_name,
@@ -623,3 +669,14 @@ async def setup(bot):
             callback=slash_callback,
         )
         bot.tree.add_command(slash_command)
+
+    # One extra command exposes every remaining social action without
+    # exceeding Discord's per-application command limit.
+    action_callback = make_action_selector_callback(cog)
+    bot.tree.add_command(
+        discord.app_commands.Command(
+            name="action",
+            description="Play a social action on someone",
+            callback=action_callback,
+        )
+    )

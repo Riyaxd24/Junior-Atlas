@@ -237,42 +237,68 @@ class AutoMod(commands.Cog):
             ephemeral=True,
         )
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if message.guild is None or message.author.bot:
-            return
-        violation = await AutoModService(self.bot.db, self.bot.cache).inspect_message(message)
-        if violation is None:
-            return
-        try:
-            if violation.action == "delete":
-                await message.delete()
-            elif violation.action == "warn":
-                await message.reply(
-                    "Please review the server rules. This message matched AutoMod.",
-                    mention_author=False,
-                    delete_after=10,
-                )
-            elif violation.action == "timeout":
-                await message.author.timeout(
-                    discord.utils.utcnow()
-                    + timedelta(seconds=violation.duration_seconds or 300),
-                    reason=violation.reason,
-                )
-            elif violation.action == "kick":
-                await message.author.kick(reason=violation.reason)
-        except discord.Forbidden:
-            log.warning(
-                "AutoMod action permission denied guild=%s member=%s",
-                message.guild.id,
-                message.author.id,
+    # Message inspection has exactly one owner: Bot.process_message. A second
+    # on_message listener here used to apply the same rules twice with a
+    # per-message service instance, so spam windows never accumulated and a
+    # member could be punished multiple times for one message.
+
+    @automod.command(name="status", description="Show AutoMod status and configured filters")
+    @app_commands.default_permissions(manage_guild=True)
+    async def status(self, interaction: discord.Interaction):
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
             )
-        except discord.HTTPException:
-            log.warning(
-                "AutoMod action failed guild=%s member=%s",
-                message.guild.id,
-                message.author.id,
+            return
+        config = await self.bot.guild_config.get(interaction.guild.id)
+        rules = await self._service().rules(interaction.guild.id)
+        enabled = bool((config or {}).get("automod_enabled"))
+        embed = discord.Embed(
+            title="AutoMod status",
+            colour=discord.Colour.blurple(),
+            description=(
+                f"**Global AutoMod:** {'enabled' if enabled else 'disabled'}\n"
+                f"**Configured filters:** {len(rules)}"
+            ),
+        )
+        if rules:
+            lines = []
+            for rule in rules:
+                state = "on" if rule.enabled else "off"
+                threshold = (rule.config or {}).get("threshold", "—")
+                lines.append(
+                    f"`{rule.name}` — {state} · action `{rule.action}` · threshold `{threshold}`"
+                )
+            embed.add_field(name="Filters", value="\n".join(lines)[:1024], inline=False)
+        else:
+            embed.add_field(
+                name="Filters",
+                value="No filters configured. Use `/automod rule` to create one.",
+                inline=False,
             )
+        embed.set_footer(text="Message checks run once per message in the main event pipeline.")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @automod.command(name="toggle", description="Enable or disable AutoMod for this server")
+    @app_commands.default_permissions(administrator=True)
+    async def toggle(self, interaction: discord.Interaction, enabled: bool):
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                "This command only works in a server.", ephemeral=True
+            )
+            return
+        await self.bot.guild_config.update(
+            interaction.guild.id, automod_enabled=enabled
+        )
+        await interaction.response.send_message(
+            f"AutoMod is now **{'enabled' if enabled else 'disabled'}**. "
+            "Individual filters still need to be enabled with `/automod rule`.",
+            ephemeral=True,
+        )
+
+    def _service(self):
+        service = getattr(self.bot, "automod_filters", None)
+        return service or AutoModService(self.bot.db, self.bot.cache)
 
 
 async def setup(bot):

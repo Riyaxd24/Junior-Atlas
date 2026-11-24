@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import hashlib
+import logging
 import re
+import time
+import uuid
 from collections import defaultdict, deque
 from time import monotonic
 from typing import NamedTuple
@@ -34,6 +38,8 @@ LINK_RE = re.compile(
 )
 EMOJI_RE = re.compile(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]")
 
+log = logging.getLogger(__name__)
+
 
 class Violation(NamedTuple):
     rule_type: str
@@ -47,6 +53,10 @@ class AutoModService:
         self.repository = AutoModRepository(db)
         self.cache = cache
         self._windows = defaultdict(deque)
+
+    async def rules(self, guild_id):
+        """Return persisted AutoMod rules for a guild."""
+        return await self.repository.get_rules(guild_id)
 
     async def configure_rule(
         self,
@@ -344,22 +354,49 @@ class AutoModService:
         return selected["action"], selected.get("duration_seconds")
 
     async def _record_event(self, message, rule_type, content, window_seconds):
-        if self.cache is not None:
-            key = f"automod:{message.guild.id}:{message.author.id}:{rule_type}"
-            now = monotonic()
-            q = self._windows[key]
-            while q and now - q[0] > window_seconds:
-                q.popleft()
-            q.append(now)
-            return len(q)
-        return await self.repository.record_message_and_count(
-            message.guild.id,
-            message.author.id,
-            message.channel.id,
-            rule_type,
-            content,
-            window_seconds,
-        )
+        """Record one event and return the count inside the sliding window.
+
+        Redis is authoritative when reachable so every shard/process shares the
+        same counter. The local deque is a bounded fallback for tests and
+        deployments without Redis; it is never mixed with the Redis count.
+        """
+        # The repeated-message rule is per content hash, while spam is per user.
+        bucket = "all"
+        if rule_type == "repeated":
+            bucket = hashlib.sha256((content or "").casefold().encode()).hexdigest()[:20]
+
+        if self.cache is not None and getattr(self.cache, "client", None) is not None:
+            key = f"automod:events:{message.guild.id}:{message.author.id}:{rule_type}:{bucket}"
+            now = time.time()
+            member = f"{now}:{uuid.uuid4().hex}"
+            script = (
+                "local k=KEYS[1]; local now=tonumber(ARGV[1]); "
+                "local window=tonumber(ARGV[2]); "
+                "redis.call('ZREMRANGEBYSCORE',k,0,now-window); "
+                "redis.call('ZADD',k,now,ARGV[3]); "
+                "redis.call('EXPIRE',k,window+2); "
+                "return redis.call('ZCARD',k)"
+            )
+            try:
+                count = await self.cache.client.eval(
+                    script, 1, key, now, window_seconds, member
+                )
+                return int(count)
+            except Exception:
+                log.warning(
+                    "automod Redis window failed guild=%s user=%s; using local fallback",
+                    message.guild.id,
+                    message.author.id,
+                    exc_info=True,
+                )
+
+        local_key = (message.guild.id, message.author.id, rule_type, bucket)
+        now = monotonic()
+        queue = self._windows[local_key]
+        while queue and now - queue[0] > window_seconds:
+            queue.popleft()
+        queue.append(now)
+        return len(queue)
 
     @staticmethod
     def _validate_rule_type(rule_type):

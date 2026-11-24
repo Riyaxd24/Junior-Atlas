@@ -2,6 +2,7 @@ import asyncio
 import logging
 from collections import defaultdict, deque
 from copy import deepcopy
+from datetime import timedelta
 
 import discord
 from discord.ext import commands
@@ -20,6 +21,7 @@ from bot.core.telemetry import setup_telemetry
 from bot.services.achievements import AchievementService
 from bot.services.antiraid import AntiRaid
 from bot.services.automod import AutoModService
+from bot.services.automod_v3 import AutoModService as FilterAutoModService
 from bot.services.custom_commands import CustomCommandService
 from bot.services.extreme import ExtremeService
 from bot.services.greeting import GreetingRenderer
@@ -29,7 +31,11 @@ from bot.services.levels import LevelService
 from bot.services.music import MusicService
 from bot.services.platform import PlatformService
 from bot.services.reactions import ReactionGifService
-from bot.services.security import AntiNukeService
+from bot.services.security import (
+    AntiNukeService,
+    merge_security_updates,
+    normalize_security_settings,
+)
 from bot.services.tickets import TicketService
 from bot.services.uwuify import UwuifyService
 from bot.services.v16_runtime import V16Runtime
@@ -54,7 +60,49 @@ def find_quarantine_role(guild):
     return None
 
 
-EXTENSIONS=('bot.commands.greeting','bot.commands.greeting_prefix','bot.commands.rules','bot.commands.moderation','bot.commands.logging','bot.commands.automod','bot.commands.roles','bot.commands.fun','bot.commands.utility','bot.commands.invites','bot.commands.music','bot.commands.admin','bot.commands.community','bot.commands.custom','bot.commands.tickets','bot.commands.platform','bot.commands.control','bot.commands.engagement','bot.commands.security','bot.commands.text','bot.commands.help','bot.commands.prefix','bot.commands.extreme','bot.commands.levels')
+def match_message_prefix(content: str, prefixes) -> str | None:
+    """Return the longest matching prefix, or ``None``.
+
+    Module-level so message processing also works with lightweight bot doubles
+    used by tests and internal callers.
+    """
+    matches = [prefix for prefix in prefixes if isinstance(prefix, str) and content.startswith(prefix)]
+    return max(matches, key=len) if matches else None
+
+
+async def resolve_message_prefixes(bot, message) -> list[str]:
+    """Return concrete prefix strings for a message.
+
+    ``commands.Bot.command_prefix`` stores the *callable* resolver, not a
+    string. Calling ``str.startswith`` on it raises ``TypeError`` and used to
+    abort every gateway ``on_message`` event before it reached the queue.
+    Resolving through ``get_prefix`` keeps mention and per-guild prefixes.
+    """
+    resolver = getattr(bot, "get_prefix", None)
+    if resolver is not None:
+        try:
+            prefixes = await resolver(message)
+        except Exception:
+            log.exception(
+                "could not resolve command prefix guild=%s",
+                getattr(getattr(message, "guild", None), "id", None),
+            )
+            prefixes = None
+    else:
+        prefixes = None
+    if prefixes is None:
+        configured = getattr(bot, "command_prefix", ",")
+        prefixes = configured if isinstance(configured, str) else ","
+    if isinstance(prefixes, str):
+        prefixes = [prefixes]
+    cleaned = [value for value in prefixes if isinstance(value, str) and value]
+    if cleaned:
+        return cleaned
+    configured = getattr(bot, "command_prefix", ",")
+    return [configured if isinstance(configured, str) else ","]
+
+
+EXTENSIONS=('bot.commands.greeting','bot.commands.greeting_prefix','bot.commands.rules','bot.commands.moderation','bot.commands.logging','bot.commands.automod','bot.commands.roles','bot.commands.fun','bot.commands.utility','bot.commands.invites','bot.commands.music','bot.commands.admin','bot.commands.community','bot.commands.custom','bot.commands.tickets','bot.commands.platform','bot.commands.control','bot.commands.engagement','bot.commands.games','bot.commands.security','bot.commands.text','bot.commands.help','bot.commands.prefix','bot.commands.extreme','bot.commands.levels')
 class Bot(commands.AutoShardedBot):
     @staticmethod
     async def _command_prefix(bot, message):
@@ -73,6 +121,13 @@ class Bot(commands.AutoShardedBot):
             log.exception("could not load command prefix guild=%s", message.guild.id)
             prefix = ","
         return commands.when_mentioned_or(prefix)(bot, message)
+
+    async def resolve_message_prefixes(self, message) -> list[str]:
+        return await resolve_message_prefixes(self, message)
+
+    @staticmethod
+    def match_message_prefix(content: str, prefixes) -> str | None:
+        return match_message_prefix(content, prefixes)
 
     def __init__(self,settings):
         intents=discord.Intents.default(); intents.members=True; intents.message_content=True
@@ -93,7 +148,7 @@ class Bot(commands.AutoShardedBot):
         if settings.dashboard_enabled:
             from bot.web.api import DashboardAPI
             self.dashboard = DashboardAPI(self, settings.dashboard_host, settings.dashboard_port)
-        self.automod=AutoModService(self.cache, settings.automod_heat_decay, settings.automod_heat_ttl); self.custom_commands=CustomCommandService(self.db,self.cache); self.levels=LevelService(self.db); self.tickets=TicketService(); self.platform=PlatformService(self.db); self.extreme=ExtremeService(self.db); self.v16=V16Runtime(self);                 self.antiraid=AntiRaid(self.cache); self.anti_nuke=AntiNukeService(); self.achievements=AchievementService(self.db); self.reactions=ReactionGifService(); self.uwuify=UwuifyService(self.cache); self.invites=InviteTracker(self.db,self.cache,settings.invite_join_queue_size,settings.invite_stat_flush_interval,bot=self)
+        self.automod=AutoModService(self.cache, settings.automod_heat_decay, settings.automod_heat_ttl); self.automod_filters=FilterAutoModService(self.db,self.cache); self.custom_commands=CustomCommandService(self.db,self.cache); self.levels=LevelService(self.db); self.tickets=TicketService(); self.platform=PlatformService(self.db); self.extreme=ExtremeService(self.db); self.v16=V16Runtime(self);                 self.antiraid=AntiRaid(self.cache); self.anti_nuke=AntiNukeService(); self.achievements=AchievementService(self.db); self.reactions=ReactionGifService(); self.uwuify=UwuifyService(self.cache); self.invites=InviteTracker(self.db,self.cache,settings.invite_join_queue_size,settings.invite_stat_flush_interval,bot=self)
         self.gateway_queue=GatewayEventQueue(settings.gateway_queue_size, settings.gateway_critical_queue_size); self.gateway_workers=GatewayWorkerPool(self,self.gateway_queue,settings.gateway_workers,settings.gateway_guild_concurrency,settings.gateway_max_event_age,settings.gateway_dlq_maxsize)
         self.shard_leases=ShardLeaseManager(self.cache, settings.instance_id, settings.shard_lease_ttl_ms); self.shard_leases.bind_shutdown(self.close); self.db.set_fence_guard(self.shard_leases.validate_fence)
         self._xp_cooldown={}; self._xp_cap=200000; self.health_runner=None
@@ -186,14 +241,25 @@ class Bot(commands.AutoShardedBot):
         else:
             log.info("registered /rules subcommands=%s", sorted(local_rules))
 
-        if self.settings.guild_id:
-            guild = discord.Object(id=self.settings.guild_id)
-            self.tree.copy_global_to(guild=guild)
-            synced = await self.tree.sync(guild=guild)
-            sync_scope = f"guild:{self.settings.guild_id}"
+        from bot.core.command_sync import command_problems, sync_application_commands
+
+        problems = command_problems(self.tree)
+        if problems:
+            for problem in problems:
+                log.error("application command registration problem: %s", problem)
         else:
-            synced = await self.tree.sync()
-            sync_scope = "global"
+            log.info("application command signatures validated; no internal options exposed")
+
+        synced_global, synced_guild = await sync_application_commands(
+            self.tree,
+            guild_id=self.settings.guild_id,
+        )
+        synced = synced_guild if synced_guild is not None else synced_global
+        sync_scope = (
+            f"guild:{self.settings.guild_id}"
+            if synced_guild is not None
+            else "global"
+        )
 
         remote_rules = next((command for command in synced if command.name == "rules"), None)
         remote_options = {
@@ -228,6 +294,46 @@ class Bot(commands.AutoShardedBot):
                     channels.append(channel)
                     known_ids.add(channel.id)
         return channels
+
+    async def security_settings(self, guild_id: int) -> dict:
+        """Return the normalized anti-nuke policy for a guild."""
+        try:
+            config = await self.guild_config.get(guild_id)
+        except Exception:
+            log.exception("security settings load failed guild=%s", guild_id)
+            config = {}
+        return normalize_security_settings((config or {}).get("security_settings"))
+
+    async def update_security_settings(self, guild_id: int, **changes) -> dict:
+        """Validate and persist an anti-nuke policy change."""
+        current = await self.security_settings(guild_id)
+        updated = merge_security_updates(current, **changes)
+        await self.guild_config.update(guild_id, security_settings=updated)
+        return updated
+
+    async def notify_security(self, guild, title: str, description: str) -> None:
+        """Send a security notification to the configured channel, if any."""
+        settings = await self.security_settings(guild.id)
+        channel_id = settings.get("notify_channel_id")
+        if not channel_id:
+            try:
+                config = await self.guild_config.get(guild.id)
+            except Exception:
+                config = {}
+            channel_id = (config or {}).get("log_channel_id")
+        if not channel_id:
+            return
+        channel = guild.get_channel(channel_id)
+        if channel is None:
+            return
+        try:
+            await channel.send(embed=info_embed(title, description))
+        except discord.HTTPException:
+            log.warning(
+                "security notification failed guild=%s channel=%s",
+                guild.id,
+                channel_id,
+            )
 
     async def security_lockdown(self, guild_id: int, reason: str = "V16 lockdown"):
         guild = self.get_guild(guild_id)
@@ -886,63 +992,152 @@ class Bot(commands.AutoShardedBot):
             if not events:
                 self._destructive_actions.pop(key, None)
 
+    async def _security_policy(self, guild) -> dict:
+        """Load the normalized anti-nuke policy, failing closed to defaults."""
+        getter = getattr(self, "security_settings", None)
+        if getter is None:
+            return normalize_security_settings({})
+        try:
+            return await getter(guild.id)
+        except Exception:
+            log.exception("security policy load failed guild=%s", getattr(guild, "id", None))
+            return normalize_security_settings({})
+
+    async def _resolve_actor(self, guild, actor_id):
+        if actor_id is None:
+            return None
+        member = guild.get_member(actor_id)
+        if member is not None:
+            return member
+        try:
+            return await guild.fetch_member(actor_id)
+        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+            return None
+
     async def _observe_destructive_action(self, guild, actor_id: int | None, action: str, target_id: int | None = None, resource=None):
         if actor_id is None or not guild:
             return
-        now = asyncio.get_running_loop().time()
-        self._prune_destructive_actions(now)
-        member = guild.get_member(actor_id)
-        if member is None:
-            try:
-                member = await guild.fetch_member(actor_id)
-            except (discord.NotFound, discord.Forbidden, discord.HTTPException):
-                member = None
-        if member is not None and self.anti_nuke.trusted(member):
+        if actor_id == getattr(getattr(self, "user", None), "id", None):
+            # Restoration and routine bot work must never count against itself.
+            return
+        settings = await self._security_policy(guild)
+        if not settings.get("enabled", True):
+            return
+        member = await self._resolve_actor(guild, actor_id)
+        if member is not None and self.anti_nuke.trusted(
+            member, settings.get("trusted_user_ids", [])
+        ):
             self._destructive_actions.pop((guild.id, actor_id, "destructive"), None)
             return
+
+        now = asyncio.get_running_loop().time()
+        self._prune_destructive_actions(now)
+        policy = self.anti_nuke.policy_for(settings, action)
         assessment = self.anti_nuke.observe(
             guild.id,
             actor_id,
             action,
             confidence=0.99,
+            policy=policy,
         )
-        # Count destructive events across channel and role deletes so an actor
-        # cannot evade the threshold by alternating action types.
+        # Count deletes across channel and role actions so an actor cannot
+        # evade the threshold by alternating resource types.
         key = (guild.id, actor_id, "destructive")
-        q = self._destructive_actions[key]
-        q.append(now)
-        while q and now - q[0] > 12:
-            q.popleft()
+        combined = 0
+        if action in {"channel_delete", "role_delete"}:
+            queue = self._destructive_actions[key]
+            queue.append(now)
+            while queue and now - queue[0] > 12:
+                queue.popleft()
+            combined = len(queue)
         await self.extreme.record_security(
-            guild.id, action, actor_id=actor_id, target_id=target_id,
-            details={"burst_count": len(q)},
+            guild.id,
+            action,
+            actor_id=actor_id,
+            target_id=target_id,
+            details={
+                "burst_count": assessment.get("threshold") and combined,
+                "action_count": self.anti_nuke.burst_count(guild.id, actor_id, action),
+                "threshold": policy["threshold"],
+                "window_seconds": policy["window"],
+            },
         )
-        if assessment["automate"] and await self.extreme.enabled(guild.id, "automatic_lockdown"):
-            # The owner is the final authority; never let an anti-nuke burst
-            # attributed to the owner trigger quarantine, restore, or lockdown.
-            if actor_id == getattr(guild, "owner_id", None):
-                self._destructive_actions.pop(key, None)
-                return
-            if member is not None:
-                await self.quarantine_member(guild, member, reason=f"Junior Atlas anti-nuke: {action} burst")
-            # Recovery and containment must still run if the actor is uncached
-            # or cannot be fetched; failing attribution must not skip recovery.
-            await self.restore_security_state(guild)
-            await self.security_lockdown(guild.id, reason=f"Junior Atlas anti-nuke containment: {action} burst by {actor_id}")
-            self._destructive_actions.pop(key, None)
 
-    async def _audit_actor_for(self, guild, action, target_id):
+        if not assessment["automate"] and combined < 3:
+            await self.notify_security(
+                guild,
+                "Security event detected",
+                f"**Action:** `{action}`\n**Actor:** <@{actor_id}>\n"
+                f"**Count:** {self.anti_nuke.burst_count(guild.id, actor_id, action)}"
+                f"/{policy['threshold']} in {int(policy['window'])}s",
+            )
+            return
+
+        # The owner is the final authority. A burst attributed to the owner may
+        # still be an audited alert, but it must never trigger containment.
+        if actor_id == getattr(guild, "owner_id", None):
+            self._destructive_actions.pop(key, None)
+            await self.notify_security(
+                guild,
+                "Anti-nuke threshold reached",
+                "The server owner triggered the threshold; no automatic action was taken.",
+            )
+            return
+
+        punishment = settings.get("punishment", "quarantine")
+        quarantined = False
+        if (
+            punishment == "quarantine"
+            and settings.get("quarantine_enabled", True)
+            and member is not None
+        ):
+            quarantined = await self.quarantine_member(
+                guild,
+                member,
+                reason=f"Junior Atlas anti-nuke: {action} burst",
+            )
+        if settings.get("recovery_enabled", True) and action in {"channel_delete", "role_delete"}:
+            # Recovery must run even when the actor is uncached or cannot be
+            # fetched; failed attribution must not skip restoring the guild.
+            await self.restore_security_state(guild)
+        if punishment == "lockdown":
+            await self.security_lockdown(
+                guild.id,
+                reason=f"Junior Atlas anti-nuke containment: {action} burst by {actor_id}",
+            )
+        self._destructive_actions.pop(key, None)
+        await self.notify_security(
+            guild,
+            "Anti-nuke action taken",
+            f"**Action:** `{action}`\n**Actor:** <@{actor_id}>\n"
+            f"**Quarantined:** {'yes' if quarantined else 'no'}\n"
+            f"**Punishment:** `{punishment}`",
+        )
+
+    async def _latest_audit_actor(self, guild, action, retries=2):
+        for attempt in range(retries):
+            try:
+                async for entry in guild.audit_logs(limit=10, action=action):
+                    return entry.user.id if entry.user else None
+            except discord.HTTPException:
+                if attempt == retries - 1:
+                    return None
+            if attempt < retries - 1:
+                await asyncio.sleep(0.35 * (attempt + 1))
+        return None
+
+    async def _audit_actor_for(self, guild, action, target_id, retries=3):
         # Audit-log entries can lag the gateway event by a short interval.
         # Retry briefly before treating attribution as unknown.
-        for attempt in range(3):
+        for attempt in range(retries):
             try:
                 async for entry in guild.audit_logs(limit=25, action=action):
                     if getattr(entry.target, "id", None) == target_id:
                         return entry.user.id if entry.user else None
             except discord.HTTPException:
-                if attempt == 2:
+                if attempt == retries - 1:
                     return None
-            if attempt < 2:
+            if attempt < retries - 1:
                 await asyncio.sleep(0.35 * (attempt + 1))
         return None
 
@@ -1021,7 +1216,8 @@ class Bot(commands.AutoShardedBot):
     async def on_message(self, message):
         if message.author.bot or not message.guild:
             return
-        critical = message.content.startswith(self.command_prefix)
+        prefixes = await self.resolve_message_prefixes(message)
+        critical = self.match_message_prefix(message.content, prefixes) is not None
         accepted = self.gateway_queue.put_nowait('message', message, critical=critical)
         if not accepted and critical:
             log.error(
@@ -1067,6 +1263,119 @@ class Bot(commands.AutoShardedBot):
     async def process_member_remove(self,m):
         await self.invites.record_leave(m)
         await self.greeting_worker.submit(m,'goodbye')
+
+    async def _apply_automod_violation(self, message, violation, cfg) -> None:
+        """Apply one AutoMod verdict exactly once and record the outcome."""
+        deleted = False
+        try:
+            # Every punitive AutoMod action starts by removing the offending
+            # message so the content cannot remain visible while the action is
+            # processed.
+            await message.delete()
+            deleted = True
+        except discord.NotFound:
+            deleted = True
+        except discord.Forbidden:
+            log.warning(
+                'automod delete forbidden guild=%s channel=%s message=%s',
+                message.guild.id,
+                message.channel.id,
+                message.id,
+            )
+        except discord.HTTPException:
+            log.warning(
+                'automod delete failed guild=%s channel=%s message=%s',
+                message.guild.id,
+                message.channel.id,
+                message.id,
+            )
+
+        if violation.action == 'warn':
+            try:
+                await message.channel.send(
+                    f'{message.author.mention} please review the server rules '
+                    f'({violation.reason}).',
+                    allowed_mentions=discord.AllowedMentions(users=True),
+                    delete_after=10,
+                )
+            except discord.HTTPException:
+                pass
+        elif violation.action == 'timeout':
+            try:
+                await message.author.timeout(
+                    discord.utils.utcnow()
+                    + timedelta(seconds=violation.duration_seconds or 300),
+                    reason=f'AutoMod: {violation.reason}'[:512],
+                )
+            except discord.Forbidden:
+                log.warning(
+                    'automod timeout forbidden guild=%s member=%s',
+                    message.guild.id,
+                    message.author.id,
+                )
+            except discord.HTTPException:
+                log.warning(
+                    'automod timeout failed guild=%s member=%s',
+                    message.guild.id,
+                    message.author.id,
+                )
+        elif violation.action == 'kick':
+            try:
+                await message.author.kick(reason=f'AutoMod: {violation.reason}'[:512])
+            except discord.Forbidden:
+                log.warning(
+                    'automod kick forbidden guild=%s member=%s',
+                    message.guild.id,
+                    message.author.id,
+                )
+            except discord.HTTPException:
+                log.warning(
+                    'automod kick failed guild=%s member=%s',
+                    message.guild.id,
+                    message.author.id,
+                )
+
+        try:
+            await self.extreme.record_security(
+                message.guild.id,
+                'automod_action',
+                actor_id=message.author.id,
+                target_id=message.id,
+                details={
+                    'rule': violation.rule_type,
+                    'action': violation.action,
+                    'reason': violation.reason,
+                    'deleted': deleted,
+                    'channel_id': message.channel.id,
+                },
+            )
+        except Exception:
+            log.exception(
+                'automod audit record failed guild=%s message=%s',
+                message.guild.id,
+                message.id,
+            )
+
+        channel_id = (cfg or {}).get('log_channel_id')
+        if channel_id:
+            channel = message.guild.get_channel(channel_id)
+            if channel is not None:
+                embed = info_embed(
+                    'AutoMod action',
+                    f'**Member:** {message.author.mention} (`{message.author.id}`)\n'
+                    f'**Rule:** `{violation.rule_type}`\n'
+                    f'**Action:** `{violation.action}`\n'
+                    f'**Channel:** {message.channel.mention}',
+                )
+                try:
+                    await channel.send(embed=embed)
+                except discord.HTTPException:
+                    log.warning(
+                        'automod log delivery failed guild=%s channel=%s',
+                        message.guild.id,
+                        channel_id,
+                    )
+
     async def process_message(self,message):
         # All command and moderation processing below is guild-scoped. Keep a
         # defensive guard here even though on_message normally filters DMs, so
@@ -1076,12 +1385,15 @@ class Bot(commands.AutoShardedBot):
         # Prefix commands take the fast lane: parse/invoke before non-critical
         # XP, invite and moderation bookkeeping. This keeps command latency
         # independent of background engagement work.
-        if message.content.startswith(self.command_prefix):
+        prefix = match_message_prefix(
+            message.content, await resolve_message_prefixes(self, message)
+        )
+        if prefix is not None:
             ctx = await self.get_context(message)
             if ctx.command:
                 await self.invoke(ctx)
                 return
-            raw = message.content[len(self.command_prefix):].strip().split(maxsplit=1)
+            raw = message.content[len(prefix):].strip().split(maxsplit=1)
             if raw:
                 response = await self.custom_commands.get(message.guild.id, raw[0].lower())
                 if response:
@@ -1102,6 +1414,24 @@ class Bot(commands.AutoShardedBot):
             except discord.HTTPException:
                 log.warning('UwUify failed guild=%s user=%s message=%s', message.guild.id, message.author.id, message.id)
             return
+
+        # Native Junior Atlas filters. The service is a bot-wide singleton so
+        # its sliding windows survive across messages; a per-message instance
+        # could never accumulate enough events for spam/repeated detection.
+        if cfg.get('automod_enabled'):
+            try:
+                violation = await self.automod_filters.inspect_message(message)
+            except Exception:
+                log.exception(
+                    'automod inspection failed guild=%s channel=%s message=%s',
+                    message.guild.id,
+                    message.channel.id,
+                    message.id,
+                )
+                violation = None
+            if violation is not None:
+                await self._apply_automod_violation(message, violation, cfg)
+                return
 
         reasons = await self.v16.message_check(message)
         custom_matches = await self.v16.custom_rule_matches(message)
