@@ -547,6 +547,13 @@ class Fun(commands.Cog):
         action: str,
         member: discord.Member | None = None,
     ):
+        if action not in SAFE_ACTIONS:
+            await self._ephemeral_reply(
+                ctx_or_interaction,
+                f"Unknown action `{action}`. Use `/action` to choose a valid action.",
+            )
+            return
+
         ctx = ctx_or_interaction
         guild_marker = getattr(ctx, "guild", object())
         if guild_marker is None:
@@ -624,6 +631,66 @@ SECONDARY_SLASH_ACTIONS = tuple(
     action for action in SAFE_ACTIONS if action != "fuck"
 )
 
+# Discord rejects an option that declares more than 25 static choices.  The
+# ``/action`` command exposes every secondary action through autocomplete so the
+# full catalogue remains available without exceeding that limit.
+ACTION_CHOICE_LIMIT = 25
+
+
+def _action_description(action: str) -> str:
+    """Return a short human-readable description for an action."""
+    _key, _emoji, initial_verb = SAFE_ACTIONS[action][:3]
+    return f"{initial_verb} someone"
+
+
+def action_choices(
+    current: str = "",
+    *,
+    limit: int = ACTION_CHOICE_LIMIT,
+) -> list[discord.app_commands.Choice[str]]:
+    """Return autocomplete choices matching ``current``.
+
+    Matching is case-insensitive and considers both the action name and its
+    description.  Exact and prefix matches are ranked ahead of substring
+    matches, and the result is always capped at Discord's 25-choice limit.
+    """
+    query = (current or "").strip().casefold()
+    ranked: list[tuple[int, str]] = []
+
+    for action in SECONDARY_SLASH_ACTIONS:
+        description = _action_description(action)
+        action_folded = action.casefold()
+        if query and query not in action_folded and query not in description.casefold():
+            continue
+
+        if not query or action_folded == query:
+            rank = 0
+        elif action_folded.startswith(query):
+            rank = 1
+        elif query in action_folded:
+            rank = 2
+        else:
+            rank = 3
+        ranked.append((rank, action))
+
+    ranked.sort(key=lambda item: (item[0], item[1]))
+    capped_limit = max(0, min(limit, ACTION_CHOICE_LIMIT))
+    return [
+        discord.app_commands.Choice(
+            name=f"{action.title()} — {_action_description(action)}",
+            value=action,
+        )
+        for _rank, action in ranked[:capped_limit]
+    ]
+
+
+async def action_autocomplete(
+    interaction: discord.Interaction,
+    current: str,
+) -> list[discord.app_commands.Choice[str]]:
+    """Discord autocomplete handler for the ``/action`` selector."""
+    return action_choices(current)
+
 
 def make_action_slash_callback(cog, action):
     # The first parameter is the interaction and is never exposed as an option.
@@ -645,14 +712,21 @@ def make_action_selector_callback(cog):
         action: str,
         member: discord.Member | None = None,
     ):
+        if action not in SECONDARY_SLASH_ACTIONS:
+            await cog._ephemeral_reply(
+                interaction,
+                f"Unknown action `{action}`. Choose one of the suggestions from `/action`.",
+            )
+            return
         await cog._handle_cmd(interaction, action, member)
 
     action_callback.__name__ = "action"
-    action_callback = discord.app_commands.choices(
-        action=[
-            discord.app_commands.Choice(name=value.title(), value=value)
-            for value in SECONDARY_SLASH_ACTIONS
-        ]
+    action_callback = discord.app_commands.describe(
+        action="Social action to perform (type to search)",
+        member="Member to target (defaults to you or the replied-to message)",
+    )(action_callback)
+    action_callback = discord.app_commands.autocomplete(
+        action=action_autocomplete
     )(action_callback)
     action_callback = discord.app_commands.guild_only()(action_callback)
     return action_callback

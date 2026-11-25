@@ -247,8 +247,12 @@ class Bot(commands.AutoShardedBot):
         if problems:
             for problem in problems:
                 log.error("application command registration problem: %s", problem)
-        else:
-            log.info("application command signatures validated; no internal options exposed")
+            raise RuntimeError(
+                "Application command validation failed; refusing to start with "
+                "invalid slash-command definitions. Fix the command/parameter "
+                "problems logged above, then restart."
+            )
+        log.info("application command signatures validated; no internal options exposed")
 
         synced_global, synced_guild = await sync_application_commands(
             self.tree,
