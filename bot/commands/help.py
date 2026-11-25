@@ -306,7 +306,7 @@ class HelpPager(discord.ui.View):
         max_values=1,
         options=[discord.SelectOption(label="Select a command", value="none")],
     )
-    async def detail(self, interaction: discord.Interaction, select: discord.ui.Select) -> None:
+    async def _detail_select(self, interaction: discord.Interaction, select: discord.ui.Select) -> None:
         start = self.page * PAGE_SIZE
         chunk = self.entries[start:start + PAGE_SIZE]
         visible = {syntax: (category, description) for category, syntax, description in chunk}
