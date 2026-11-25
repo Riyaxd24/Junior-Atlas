@@ -241,7 +241,24 @@ class Bot(commands.AutoShardedBot):
         else:
             log.info("registered /rules subcommands=%s", sorted(local_rules))
 
-        from bot.core.command_sync import command_problems, sync_application_commands
+        from bot.core.command_sync import (
+            command_problems,
+            deployment_version,
+            iter_app_commands,
+            sync_application_commands,
+        )
+
+        local_commands = list(iter_app_commands(self.tree.get_commands()))
+        log.info(
+            "Application identity application_id=%s deployment=%s environment=%s "
+            "instance_id=%s local_root_commands=%d local_command_nodes=%d",
+            self.application_id,
+            deployment_version(),
+            self.settings.environment,
+            self.settings.instance_id,
+            len(self.tree.get_commands()),
+            len(local_commands),
+        )
 
         problems = command_problems(self.tree)
         if problems:
@@ -254,16 +271,33 @@ class Bot(commands.AutoShardedBot):
             )
         log.info("application command signatures validated; no internal options exposed")
 
+        # Commands are registered in exactly one scope: global.  GUILD_ID, when
+        # set, is used only to clean up stale guild-scoped copies left by older
+        # releases; it must never receive a second copy of the global tree.
         synced_global, synced_guild = await sync_application_commands(
             self.tree,
             guild_id=self.settings.guild_id,
         )
-        synced = synced_guild if synced_guild is not None else synced_global
-        sync_scope = (
-            f"guild:{self.settings.guild_id}"
-            if synced_guild is not None
-            else "global"
+        synced = synced_global
+        sync_scope = "global"
+        log.info(
+            "Discord global command registrations application_id=%s deployment=%s "
+            "count=%d ids=%s",
+            self.application_id,
+            deployment_version(),
+            len(synced),
+            sorted(
+                (command.name, str(command.id))
+                for command in synced
+                if getattr(command, "id", None) is not None
+            ),
         )
+        if synced_guild is not None:
+            log.info(
+                "Discord guild scope cleanup guild=%s remaining_guild_commands=%d",
+                self.settings.guild_id,
+                len(synced_guild),
+            )
 
         remote_rules = next((command for command in synced if command.name == "rules"), None)
         remote_options = {

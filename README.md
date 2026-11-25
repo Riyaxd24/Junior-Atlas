@@ -349,6 +349,14 @@ Main directories:
 6. Start migrations before starting the Discord gateway.
 7. Synchronize slash commands after deployment.
 
+Application commands are registered in exactly one scope: **global**. Startup
+syncs the global tree and removes stale global definitions. When `GUILD_ID` is
+set, startup also cleans up stale guild-scoped copies left by older releases;
+it never copies the global tree into that guild, because that produces duplicate
+slash commands in Discord. To audit live registrations before or after a
+deployment, run `python -m scripts.audit_commands --check-local` and use its
+opt-in guild cleanup flags if stale guild commands are found.
+
 ## Required and optional environment variables
 
 Required application variables:
