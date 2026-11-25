@@ -19,6 +19,9 @@ log = logging.getLogger("bot.command_sync")
 # Parameters that are never user-facing slash-command options.
 FORBIDDEN_OPTION_NAMES = frozenset({"ctx", "self", "interaction", "cog", "bot"})
 
+# Discord rejects an application-command option with more than 25 static choices.
+MAX_STATIC_CHOICES = 25
+
 
 def iter_app_commands(commands: Iterable) -> Iterator:
     """Yield every command, including nested subcommands and groups."""
@@ -48,7 +51,46 @@ def command_problems(tree: app_commands.CommandTree) -> list[str]:
                 problems.append(
                     f"{qualified} exposes private parameter '{name}' as a slash option"
                 )
+            choices = getattr(parameter, "choices", []) or []
+            if len(choices) > MAX_STATIC_CHOICES:
+                problems.append(
+                    f"{qualified} parameter '{name}' declares {len(choices)} static "
+                    f"choices; Discord allows at most {MAX_STATIC_CHOICES}. "
+                    "Use autocomplete instead of removing actions."
+                )
     return problems
+
+
+async def _sync_scope(tree: app_commands.CommandTree, scope: str, **kwargs) -> list:
+    """Run one sync scope and make failures impossible to miss in the logs."""
+    try:
+        synced = await tree.sync(**kwargs)
+    except app_commands.CommandSyncFailure as error:
+        # discord.py includes the offending command and parameter in the
+        # exception text.  Log every line so the actionable detail is never
+        # hidden inside a multi-line traceback, then re-raise: a failed sync
+        # must stop startup rather than be reported as success.
+        log.error(
+            "Discord application command sync FAILED scope=%s. "
+            "Fix the command definition below and restart; startup will stop.",
+            scope,
+        )
+        for line in str(error).splitlines():
+            log.error("Discord command sync detail scope=%s: %s", scope, line)
+        raise
+    except Exception:
+        log.exception(
+            "Discord application command sync FAILED scope=%s. Startup will stop.",
+            scope,
+        )
+        raise
+
+    log.info(
+        "Discord command sync succeeded scope=%s commands=%d",
+        scope,
+        len(synced),
+    )
+    return synced
 
 
 async def sync_application_commands(
@@ -67,19 +109,10 @@ async def sync_application_commands(
     This is a *definition* sync, not a blind command wipe: unrelated
     application commands and all local cogs remain registered.
     """
-    global_synced = await tree.sync()
-    log.info(
-        "Discord command sync scope=global commands=%d",
-        len(global_synced),
-    )
+    global_synced = await _sync_scope(tree, "global")
     guild_synced: list | None = None
     if guild_id:
         guild = discord.Object(id=guild_id)
         tree.copy_global_to(guild=guild)
-        guild_synced = await tree.sync(guild=guild)
-        log.info(
-            "Discord command sync scope=guild:%s commands=%d",
-            guild_id,
-            len(guild_synced),
-        )
+        guild_synced = await _sync_scope(tree, f"guild:{guild_id}", guild=guild)
     return global_synced, guild_synced
