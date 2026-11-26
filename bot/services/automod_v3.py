@@ -136,10 +136,12 @@ class AutoModService:
         if member.top_role >= guild.me.top_role:
             return None
         permissions = member.guild_permissions
+        # Only exempt administrators and guild owner from AutoMod checks.
+        # manage_messages is NOT exempted to allow mass-ping protection to work
+        # for moderators. Use exempt_roles for fine-grained control.
         if (
             permissions.administrator
             or permissions.manage_guild
-            or permissions.manage_messages
         ):
             return None
 
