@@ -205,6 +205,11 @@ class AutoModService:
         elif rule_type == "mentions":
             mention_count = len(getattr(message, "mentions", []))
             mention_count += len(getattr(message, "role_mentions", []))
+            # ``@everyone`` and ``@here`` do not appear in ``mentions`` or
+            # ``role_mentions``, but they are the highest-impact pings and must
+            # count toward mass-mention protection.
+            if getattr(message, "mention_everyone", False):
+                mention_count += 1
             if mention_count >= threshold:
                 return Violation(rule_type, "delete", "Mention spam detected.")
         elif rule_type == "invites":

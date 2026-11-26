@@ -248,8 +248,16 @@ class AntiNukeService:
         self._windows.pop((guild_id, actor_id, event_type), None)
 
     @staticmethod
-    def trusted(member, trusted_ids=()) -> bool:
-        """Return True for the owner, administrators and explicit allowlists."""
+    def trusted(member, trusted_ids=(), *, include_administrators: bool = True) -> bool:
+        """Return True for the owner, explicit allowlists and administrators.
+
+        ``include_administrators=False`` is used by the destructive-action
+        pipeline.  A rogue administrator must still be rate-limited and
+        contained; only the owner and the explicit trusted allowlist are
+        unconditional exemptions there.  The default keeps the public helper
+        backwards compatible for callers that intentionally treat staff as
+        trusted.
+        """
         guild = getattr(member, "guild", None)
         if member is None or guild is None:
             return False
@@ -257,5 +265,7 @@ class AntiNukeService:
             return True
         if int(getattr(member, "id", 0)) in set(trusted_ids or ()):
             return True
+        if not include_administrators:
+            return False
         permissions = getattr(member, "guild_permissions", None)
         return bool(getattr(permissions, "administrator", False))

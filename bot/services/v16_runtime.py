@@ -104,7 +104,10 @@ class V16Runtime:
             reasons.append('duplicate')
         if settings.get('emoji_spam') and len(re.findall(r'<a?:\w+:\d+>|[\U0001F300-\U0001FAFF]', content)) >= 12:
             reasons.append('emoji_spam')
-        if settings.get('mention_spam') and len(message.mentions) + len(message.role_mentions) >= 8:
+        mention_count = len(message.mentions) + len(message.role_mentions)
+        if getattr(message, 'mention_everyone', False):
+            mention_count += 1
+        if settings.get('mention_spam') and mention_count >= 8:
             reasons.append('mention_spam')
 
         return list(dict.fromkeys(reasons))

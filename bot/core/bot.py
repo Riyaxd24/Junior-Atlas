@@ -26,6 +26,7 @@ from bot.services.custom_commands import CustomCommandService
 from bot.services.extreme import ExtremeService
 from bot.services.greeting import GreetingRenderer
 from bot.services.guild_config import GuildConfigService
+from bot.services.interaction_xp import InteractionXPService
 from bot.services.invites import InviteTracker
 from bot.services.levels import LevelService
 from bot.services.music import MusicService
@@ -148,11 +149,14 @@ class Bot(commands.AutoShardedBot):
         if settings.dashboard_enabled:
             from bot.web.api import DashboardAPI
             self.dashboard = DashboardAPI(self, settings.dashboard_host, settings.dashboard_port)
-        self.automod=AutoModService(self.cache, settings.automod_heat_decay, settings.automod_heat_ttl); self.automod_filters=FilterAutoModService(self.db,self.cache); self.custom_commands=CustomCommandService(self.db,self.cache); self.levels=LevelService(self.db); self.tickets=TicketService(); self.platform=PlatformService(self.db); self.extreme=ExtremeService(self.db); self.v16=V16Runtime(self);                 self.antiraid=AntiRaid(self.cache); self.anti_nuke=AntiNukeService(); self.achievements=AchievementService(self.db); self.reactions=ReactionGifService(); self.uwuify=UwuifyService(self.cache); self.invites=InviteTracker(self.db,self.cache,settings.invite_join_queue_size,settings.invite_stat_flush_interval,bot=self)
+        self.automod=AutoModService(self.cache, settings.automod_heat_decay, settings.automod_heat_ttl); self.automod_filters=FilterAutoModService(self.db,self.cache); self.custom_commands=CustomCommandService(self.db,self.cache); self.levels=LevelService(self.db); self.interaction_xp=InteractionXPService(self.db); self.tickets=TicketService(); self.platform=PlatformService(self.db); self.extreme=ExtremeService(self.db); self.v16=V16Runtime(self);                 self.antiraid=AntiRaid(self.cache); self.anti_nuke=AntiNukeService(); self.achievements=AchievementService(self.db); self.reactions=ReactionGifService(); self.uwuify=UwuifyService(self.cache); self.invites=InviteTracker(self.db,self.cache,settings.invite_join_queue_size,settings.invite_stat_flush_interval,bot=self)
         self.gateway_queue=GatewayEventQueue(settings.gateway_queue_size, settings.gateway_critical_queue_size); self.gateway_workers=GatewayWorkerPool(self,self.gateway_queue,settings.gateway_workers,settings.gateway_guild_concurrency,settings.gateway_max_event_age,settings.gateway_dlq_maxsize)
         self.shard_leases=ShardLeaseManager(self.cache, settings.instance_id, settings.shard_lease_ttl_ms); self.shard_leases.bind_shutdown(self.close); self.db.set_fence_guard(self.shard_leases.validate_fence)
         self._xp_cooldown={}; self._xp_cap=200000; self.health_runner=None
         self._destructive_actions = defaultdict(deque); self._last_destructive_prune = 0.0
+        # Combined channel/role deletions are retained for the largest
+        # configured anti-nuke window, with a 60s floor for pruning.
+        self._destructive_retention_seconds = 60.0
     async def setup_hook(self):
         setup_telemetry(self.settings); start_metrics(self.settings.metrics_host,self.settings.metrics_port); self.health_runner=await start_health_server(self,self.settings.metrics_host,self.settings.health_port)
         recommended_shard_count = None
@@ -1024,8 +1028,9 @@ class Bot(commands.AutoShardedBot):
         if now - self._last_destructive_prune < 60:
             return
         self._last_destructive_prune = now
+        retention = float(getattr(self, "_destructive_retention_seconds", 60.0))
         for key, events in list(self._destructive_actions.items()):
-            while events and now - events[0] > 12:
+            while events and now - events[0] > retention:
                 events.popleft()
             if not events:
                 self._destructive_actions.pop(key, None)
@@ -1052,23 +1057,56 @@ class Bot(commands.AutoShardedBot):
         except (discord.NotFound, discord.Forbidden, discord.HTTPException):
             return None
 
-    async def _observe_destructive_action(self, guild, actor_id: int | None, action: str, target_id: int | None = None, resource=None):
+    async def _anti_nuke_event_enabled(self, guild, feature: str) -> tuple[bool, bool]:
+        """Return ``(should_observe, force)`` for a destructive event.
+
+        Security settings are authoritative and enabled by default.  The V16
+        catalog flag is an explicit opt-in that can also force observation when
+        an operator disabled the broader policy; it must never silently disable
+        the policy merely because its catalog default is False.
+        """
+        force = bool(await self.extreme.enabled(guild.id, feature))
+        if force:
+            return True, True
+        settings = await self._security_policy(guild)
+        return bool(settings.get("enabled", True)), False
+
+    async def _observe_destructive_action(self, guild, actor_id: int | None, action: str, target_id: int | None = None, resource=None, *, force: bool = False):
         if actor_id is None or not guild:
             return
         if actor_id == getattr(getattr(self, "user", None), "id", None):
             # Restoration and routine bot work must never count against itself.
             return
         settings = await self._security_policy(guild)
-        if not settings.get("enabled", True):
+        if not settings.get("enabled", True) and not force:
             return
         member = await self._resolve_actor(guild, actor_id)
+        # Administrators are not automatically exempt from destructive-action
+        # limits.  Only the owner and the explicit trusted allowlist are.
         if member is not None and self.anti_nuke.trusted(
-            member, settings.get("trusted_user_ids", [])
+            member,
+            settings.get("trusted_user_ids", []),
+            include_administrators=False,
         ):
             self._destructive_actions.pop((guild.id, actor_id, "destructive"), None)
             return
 
         now = asyncio.get_running_loop().time()
+        key = (guild.id, actor_id, "destructive")
+        combined_threshold = 0
+        combined_window = 0.0
+        if action in {"channel_delete", "role_delete"}:
+            channel_policy = self.anti_nuke.policy_for(settings, "channel_delete")
+            role_policy = self.anti_nuke.policy_for(settings, "role_delete")
+            combined_threshold = min(
+                int(channel_policy["threshold"]),
+                int(role_policy["threshold"]),
+            )
+            combined_window = max(
+                float(channel_policy["window"]),
+                float(role_policy["window"]),
+            )
+            self._destructive_retention_seconds = max(60.0, combined_window)
         self._prune_destructive_actions(now)
         policy = self.anti_nuke.policy_for(settings, action)
         assessment = self.anti_nuke.observe(
@@ -1079,13 +1117,13 @@ class Bot(commands.AutoShardedBot):
             policy=policy,
         )
         # Count deletes across channel and role actions so an actor cannot
-        # evade the threshold by alternating resource types.
-        key = (guild.id, actor_id, "destructive")
+        # evade the threshold by alternating resource types.  The threshold and
+        # window come from the configured policy, not a hardcoded constant.
         combined = 0
-        if action in {"channel_delete", "role_delete"}:
+        if combined_threshold:
             queue = self._destructive_actions[key]
             queue.append(now)
-            while queue and now - queue[0] > 12:
+            while queue and now - queue[0] > combined_window:
                 queue.popleft()
             combined = len(queue)
         await self.extreme.record_security(
@@ -1094,14 +1132,17 @@ class Bot(commands.AutoShardedBot):
             actor_id=actor_id,
             target_id=target_id,
             details={
-                "burst_count": assessment.get("threshold") and combined,
+                "burst_count": combined,
                 "action_count": self.anti_nuke.burst_count(guild.id, actor_id, action),
                 "threshold": policy["threshold"],
                 "window_seconds": policy["window"],
             },
         )
 
-        if not assessment["automate"] and combined < 3:
+        combined_triggered = bool(
+            combined_threshold and combined >= combined_threshold
+        )
+        if not assessment["automate"] and not combined_triggered:
             await self.notify_security(
                 guild,
                 "Security event detected",
@@ -1222,14 +1263,20 @@ class Bot(commands.AutoShardedBot):
     async def on_guild_channel_delete(self, channel):
         guild = channel.guild
         actor = await self._audit_actor_for(guild, discord.AuditLogAction.channel_delete, channel.id)
-        if await self.extreme.enabled(guild.id, "anti_channel_delete"):
-            await self._observe_destructive_action(guild, actor, "channel_delete", channel.id, channel)
+        enabled, force = await self._anti_nuke_event_enabled(guild, "anti_channel_delete")
+        if enabled:
+            await self._observe_destructive_action(
+                guild, actor, "channel_delete", channel.id, channel, force=force
+            )
 
     async def on_guild_role_delete(self, role):
         guild = role.guild
         actor = await self._audit_actor_for(guild, discord.AuditLogAction.role_delete, role.id)
-        if await self.extreme.enabled(guild.id, "anti_role_delete"):
-            await self._observe_destructive_action(guild, actor, "role_delete", role.id, role)
+        enabled, force = await self._anti_nuke_event_enabled(guild, "anti_role_delete")
+        if enabled:
+            await self._observe_destructive_action(
+                guild, actor, "role_delete", role.id, role, force=force
+            )
 
     async def on_guild_join(self, guild):
         GUILDS.set(len(self.guilds))

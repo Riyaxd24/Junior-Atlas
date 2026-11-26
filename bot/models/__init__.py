@@ -21,6 +21,7 @@ from .extended import (
     Suggestion,
 )
 from .games import GameSession, GameStats
+from .interactions import InteractionXP
 from .logging import LogPrivacySetting, LogRecord, LogSetting
 from .roles import RoleMenu, RoleMenuItem, TempRole, VerificationSetting
 from .schema import (
@@ -63,6 +64,7 @@ __all__ = [
     "Giveaway",
     "GiveawayEntry",
     "GuildConfig",
+    "InteractionXP",
     "InviteStat",
     "Level",
     "LevelRole",
