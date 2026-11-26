@@ -1,13 +1,27 @@
 import inspect
+import io
 import logging
+import math
 import random
 import time
 from urllib.parse import urlparse
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 
-from bot.ui import info_embed
+from bot.core.interactions import SafeView, safe_defer, safe_edit, safe_send
+from bot.services import pixel_art
+from bot.services.friendship import FriendshipXP
+from bot.services.minecraft_actions import (
+    ACTION_ORDER,
+    MINECRAFT_ACTIONS,
+    XP_COOLDOWN_SECONDS,
+    action_emoji,
+    action_extras,
+    get_action,
+)
+from bot.ui import error_embed, info_embed
 
 log = logging.getLogger(__name__)
 
@@ -57,6 +71,15 @@ SAFE_ACTIONS = {
     "bow": ("bow", "🙇", "bowed to", "bowed back to"),
 }
 
+# The Minecraft catalogue is the source of truth for all of its commands.
+for _action_name, _action_spec in MINECRAFT_ACTIONS.items():
+    SAFE_ACTIONS[_action_name] = (
+        _action_spec.gif_key,
+        _action_spec.emoji,
+        _action_spec.initial_verb,
+        _action_spec.reciprocate_verb,
+    )
+
 
 GIF_FALLBACKS = {
     "flirt": "blush",
@@ -75,6 +98,10 @@ GIF_FALLBACKS = {
     "nom": "bite",
     "comfort": "hug",
     "bow": "wave",
+    "boop": "poke",
+    "bonk": "punch",
+    "slap": "punch",
+    "highfive": "wave",
 }
 
 
@@ -95,15 +122,39 @@ def _is_valid_url(value) -> bool:
 
     try:
         parts = urlparse(value)
-        return (
-            parts.scheme in ("http", "https")
-            and bool(parts.hostname)
-        )
+        return parts.scheme in ("http", "https") and bool(parts.hostname)
     except ValueError:
         return False
 
 
-class ActionView(discord.ui.View):
+def _display_name(user) -> str:
+    return str(
+        getattr(user, "display_name", None)
+        or getattr(user, "name", None)
+        or getattr(user, "id", "Someone")
+    )
+
+
+def _minecraft_embed(spec, text: str, *, user, count: int) -> discord.Embed:
+    embed = discord.Embed(
+        title=f"{spec.emoji} {spec.title}",
+        description=text,
+        colour=discord.Colour(spec.color),
+        timestamp=discord.utils.utcnow(),
+    )
+    times = "time" if count == 1 else "times"
+    embed.set_footer(
+        text=(
+            f"Junior Atlas • {spec.category} • "
+            f"{_display_name(user)} used this {count} {times}"
+        )
+    )
+    return embed
+
+
+class ActionView(SafeView):
+    """Reciprocation button restricted to the original target."""
+
     def __init__(
         self,
         cog,
@@ -117,13 +168,13 @@ class ActionView(discord.ui.View):
         self.initiator = initiator
         self.target = target
         self.used = False
-        self.message: discord.Message | None = None
 
-        action_data = SAFE_ACTIONS[action]
-        emoji = action_data[1]
+        spec = get_action(action)
+        emoji = spec.emoji if spec else SAFE_ACTIONS[action][1]
+        label = spec.button_label if spec else f"{action.capitalize()} back!"
 
         self.reciprocate_button = discord.ui.Button(
-            label=f"{action.capitalize()} back!",
+            label=label,
             style=discord.ButtonStyle.primary,
             emoji=emoji,
         )
@@ -132,21 +183,29 @@ class ActionView(discord.ui.View):
 
     async def reciprocate_callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.target.id:
-            await interaction.response.send_message(
-                f"Only {self.target.mention} can use this button!",
+            await safe_send(
+                interaction,
+                content=f"Only {self.target.mention} can use this button!",
                 ephemeral=True,
             )
             return
 
         if self.used:
-            await interaction.response.send_message("Already used!", ephemeral=True)
+            await safe_send(
+                interaction,
+                content="That reciprocation has already been used.",
+                ephemeral=True,
+            )
             return
 
         self.used = True
+        self.reciprocate_button.disabled = True
 
         try:
-            self.reciprocate_button.disabled = True
-            await interaction.response.edit_message(view=self)
+            if not await safe_edit(interaction, view=self):
+                self.used = False
+                self.reciprocate_button.disabled = False
+                return
 
             await self.cog._execute_action(
                 ctx_or_interaction=interaction,
@@ -163,36 +222,15 @@ class ActionView(discord.ui.View):
             )
             self.used = False
             self.reciprocate_button.disabled = False
-            error_text = "Something went wrong sending that. Please try the button again."
-            try:
-                if interaction.response.is_done():
-                    await interaction.edit_original_response(view=self)
-                    await interaction.followup.send(error_text, ephemeral=True)
-                else:
-                    await interaction.response.send_message(error_text, ephemeral=True)
-            except discord.HTTPException:
-                log.warning("Could not report reciprocal failure", exc_info=True)
+            await safe_edit(interaction, view=self)
+            await safe_send(
+                interaction,
+                content="Something went wrong sending that. Please try again.",
+                ephemeral=True,
+            )
             return
 
         self.stop()
-
-    async def on_error(self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item):
-        log.error("ActionView error (action=%r)", self.action, exc_info=error)
-        try:
-            if interaction.response.is_done():
-                await interaction.followup.send("Something went wrong. Please try again.", ephemeral=True)
-            else:
-                await interaction.response.send_message("Something went wrong. Please try again.", ephemeral=True)
-        except discord.HTTPException:
-            pass
-
-    async def on_timeout(self):
-        self.reciprocate_button.disabled = True
-        if self.message:
-            try:
-                await self.message.edit(view=self)
-            except discord.HTTPException:
-                pass
 
 
 class ConsentView(discord.ui.View):
@@ -227,7 +265,7 @@ class ConsentView(discord.ui.View):
 
         embed = info_embed(
             "🔞 Fuck",
-            f"{self.target.mention} accepted! {self.initiator.mention} fucked {self.target.mention}!"
+            f"{self.target.mention} accepted! {self.initiator.mention} fucked {self.target.mention}!",
         )
         if gif_url:
             embed.set_image(url=gif_url)
@@ -272,10 +310,11 @@ class Fun(commands.Cog):
 
         cog_commands = list(getattr(self, "__cog_commands__", []))
 
-        # Dynamically register hybrid commands for standard actions
+        # Dynamically register prefix commands for every standard action.
         for action_name in SAFE_ACTIONS:
             if action_name == "fuck":
                 continue
+
             def make_callback(action):
                 async def dynamic_command(
                     self_cog,
@@ -283,15 +322,26 @@ class Fun(commands.Cog):
                     member: discord.Member | None = None,
                 ):
                     await self_cog._handle_cmd(ctx, action, member)
+
                 return dynamic_command
 
+            spec = get_action(action_name)
+            description = (
+                spec.description
+                if spec
+                else f"Playfully {action_name} someone"
+            )
             callback = make_callback(action_name)
             callback.__name__ = action_name
-            callback.__doc__ = f"Playfully {action_name} someone"
-            prefix_cmd = commands.command(
-                name=action_name,
-                description=f"Playfully {action_name} someone",
-            )(callback)
+            callback.__doc__ = description
+            command_kwargs = {
+                "name": action_name,
+                "description": description,
+                "help": description,
+            }
+            if spec is not None:
+                command_kwargs["extras"] = action_extras(spec)
+            prefix_cmd = commands.command(**command_kwargs)(callback)
             cog_commands.append(prefix_cmd)
 
         self.__cog_commands__ = cog_commands
@@ -358,7 +408,7 @@ class Fun(commands.Cog):
         action: str,
         delta: int = 1,
     ) -> tuple[int, bool]:
-        redis = getattr(self.bot, "redis", None)
+        redis = getattr(self.bot, "cache", None)
         if redis is not None:
             try:
                 result = redis.hincrby(
@@ -374,10 +424,7 @@ class Fun(commands.Cog):
                 )
                 raise
         key = (guild_id, user_id, action)
-        self._counts[key] = max(
-            0,
-            self._counts.get(key, 0) + delta,
-        )
+        self._counts[key] = max(0, self._counts.get(key, 0) + delta)
         return self._counts[key], False
 
     async def _rollback_count(
@@ -388,7 +435,7 @@ class Fun(commands.Cog):
         used_redis: bool,
     ) -> None:
         if used_redis:
-            redis = getattr(self.bot, "redis", None)
+            redis = getattr(self.bot, "cache", None)
             if redis is None:
                 log.error("Cannot roll back Redis counter: Redis unavailable")
                 return
@@ -403,6 +450,81 @@ class Fun(commands.Cog):
         key = (guild_id, user_id, action)
         self._counts[key] = max(0, self._counts.get(key, 0) - 1)
 
+    def _local_art(self, action: str, spec) -> tuple[discord.File | None, str | None]:
+        """Render original pixel art locally; never require an external host."""
+        title = spec.title if spec else action.title()
+        color = spec.color if spec else 0x5865F2
+        category = spec.category if spec else "Fun"
+        try:
+            data = pixel_art.render_action_card(action, title, color, category)
+        except Exception:
+            log.debug("pixel-art fallback failed action=%s", action, exc_info=True)
+            return None, None
+        if not data:
+            return None, None
+        filename = f"junior-atlas-{action}.png"
+        try:
+            return discord.File(io.BytesIO(data), filename=filename), filename
+        except Exception:
+            log.debug("pixel-art attachment failed action=%s", action, exc_info=True)
+            return None, None
+
+    async def _award_interaction_xp(
+        self,
+        guild_id: int,
+        user_id: int,
+        action: str,
+        *,
+        is_reciprocal: bool,
+        self_target: bool,
+    ):
+        service = getattr(self.bot, "interaction_xp", None)
+        if service is None or guild_id <= 0:
+            return None
+        try:
+            return await service.award(
+                guild_id,
+                user_id,
+                action,
+                reciprocal=is_reciprocal,
+                self_target=self_target,
+            )
+        except Exception:
+            log.exception(
+                "Friendship XP award failed guild=%s user=%s action=%s",
+                guild_id,
+                user_id,
+                action,
+            )
+            return None
+
+    @staticmethod
+    def _apply_xp(embed: discord.Embed, result) -> None:
+        if result.awarded:
+            line = f"**+{result.amount} Friendship XP!**"
+            if result.level_up:
+                line += (
+                    f"\n**Level up!** You reached Friendship Level "
+                    f"{result.level} — {FriendshipXP.level_title(result.level)}."
+                )
+        else:
+            remaining = math.ceil(max(0.0, result.cooldown_remaining))
+            line = (
+                f"*Friendship XP is cooling down — ready in {remaining}s.*"
+                if remaining > 0
+                else "*Friendship XP is ready again.*"
+            )
+        description = embed.description or ""
+        embed.description = f"{description}\n\n{line}"
+        embed.add_field(
+            name="Friendship Level",
+            value=(
+                f"Level {result.level} • "
+                f"{result.level_xp}/{result.next_level_xp} XP"
+            ),
+            inline=True,
+        )
+
     async def _execute_action(
         self,
         ctx_or_interaction: commands.Context | discord.Interaction,
@@ -410,10 +532,7 @@ class Fun(commands.Cog):
         target: discord.Member | None,
         is_reciprocal: bool = False,
     ):
-        is_interaction = isinstance(
-            ctx_or_interaction,
-            discord.Interaction,
-        )
+        is_interaction = isinstance(ctx_or_interaction, discord.Interaction)
 
         user = (
             ctx_or_interaction.user
@@ -422,47 +541,64 @@ class Fun(commands.Cog):
         )
 
         target_member = target or user
+        spec = get_action(action)
         action_data = SAFE_ACTIONS[action]
 
-        if len(action_data) == 3:
-            key, emoji, initial_verb = action_data
-            reciprocate_verb = initial_verb
+        if spec is not None:
+            key = spec.gif_key
+            emoji = spec.emoji
+            initial_verb = spec.initial_verb
+            reciprocate_verb = spec.reciprocate_verb
         else:
             key, emoji, initial_verb, reciprocate_verb = action_data
 
-        url = await self._get_reaction_url(key)
+        url = None
+        if spec is None or spec.uses_gif:
+            url = await self._get_reaction_url(key)
+            if not url:
+                fallback_key = GIF_FALLBACKS.get(key, "")
+                if fallback_key:
+                    url = await self._get_reaction_url(fallback_key)
 
+        attachment = None
+        attachment_name = None
         if not url:
-            fallback_key = GIF_FALLBACKS.get(key, "")
-
-            if fallback_key:
-                url = await self._get_reaction_url(
-                    fallback_key
-                )
+            attachment, attachment_name = self._local_art(action, spec)
 
         if target_member.id == user.id:
-            text = (
-                f"{user.mention} {initial_verb} themselves!\n"
-                "*Tip: mention someone or reply to their message to target them.*"
-            )
+            if spec is not None:
+                text = random.choice(spec.self_responses)
+            else:
+                text = (
+                    f"{user.mention} {initial_verb} themselves!\n"
+                    "*Tip: mention someone or reply to their message to target them.*"
+                )
             view = None
         elif is_reciprocal:
-            text = (
-                f"{user.mention} {reciprocate_verb} "
-                f"{target_member.mention}!"
-            )
+            if spec is not None:
+                text = random.choice(
+                    spec.reciprocal_responses or spec.responses
+                )
+            else:
+                text = (
+                    f"{user.mention} {reciprocate_verb} "
+                    f"{target_member.mention}!"
+                )
             view = None
         else:
-            text = (
-                f"{user.mention} {initial_verb} "
-                f"{target_member.mention}!"
-            )
-            view = ActionView(
-                self,
-                action,
-                user,
-                target_member,
-            )
+            if spec is not None:
+                text = random.choice(spec.responses)
+            else:
+                text = (
+                    f"{user.mention} {initial_verb} "
+                    f"{target_member.mention}!"
+                )
+            view = ActionView(self, action, user, target_member)
+
+        text = text.format(
+            actor=user.mention,
+            target=target_member.mention,
+        )
 
         guild = getattr(ctx_or_interaction, "guild", None)
         guild_id = guild.id if guild else 0
@@ -473,26 +609,29 @@ class Fun(commands.Cog):
             action,
         )
 
-        embed = info_embed(
-            f"{emoji} {action.title()}",
-            text,
-        )
+        if spec is not None:
+            embed = _minecraft_embed(spec, text, user=user, count=count)
+        else:
+            embed = info_embed(f"{emoji} {action.title()}", text)
+            embed.set_footer(
+                text=(
+                    f"{_display_name(user)} has used {action} "
+                    f"{count} time{'s' if count != 1 else ''} "
+                    "• Junior Atlas"
+                )
+            )
 
         if url:
             embed.set_image(url=url)
-
-        embed.set_footer(
-            text=(
-                f"{getattr(user, 'display_name', getattr(user, 'name', str(user)))} has used {action} "
-                f"{count} time{'s' if count != 1 else ''} "
-                "• Junior Atlas"
-            )
-        )
+        elif attachment_name:
+            embed.set_image(url=f"attachment://{attachment_name}")
 
         kwargs = {"embed": embed}
 
         if view is not None:
             kwargs["view"] = view
+        if attachment is not None:
+            kwargs["file"] = attachment
 
         message = None
         delivered = False
@@ -500,7 +639,7 @@ class Fun(commands.Cog):
         try:
             if is_interaction:
                 if not ctx_or_interaction.response.is_done():
-                    await ctx_or_interaction.response.defer()
+                    await safe_defer(ctx_or_interaction, ephemeral=False)
 
                 message = await ctx_or_interaction.followup.send(
                     wait=True,
@@ -508,9 +647,7 @@ class Fun(commands.Cog):
                 )
                 delivered = True
             else:
-                message = await ctx_or_interaction.send(
-                    **kwargs,
-                )
+                message = await ctx_or_interaction.send(**kwargs)
                 delivered = True
 
         except Exception:
@@ -527,17 +664,31 @@ class Fun(commands.Cog):
         if view is not None and message is not None:
             view.message = message
 
+        xp_result = await self._award_interaction_xp(
+            guild_id,
+            user.id,
+            action,
+            is_reciprocal=is_reciprocal,
+            self_target=target_member.id == user.id,
+        )
+        if xp_result is not None:
+            self._apply_xp(embed, xp_result)
+            if message is not None:
+                try:
+                    await message.edit(embed=embed)
+                except Exception:
+                    log.debug(
+                        "Could not update interaction embed with XP guild=%s action=%s",
+                        guild_id,
+                        action,
+                        exc_info=True,
+                    )
+
     @staticmethod
     async def _ephemeral_reply(ctx_or_interaction, text: str) -> None:
         """Reply privately to either a prefix context or a slash interaction."""
         if isinstance(ctx_or_interaction, discord.Interaction):
-            try:
-                if ctx_or_interaction.response.is_done():
-                    await ctx_or_interaction.followup.send(text, ephemeral=True)
-                else:
-                    await ctx_or_interaction.response.send_message(text, ephemeral=True)
-            except discord.HTTPException:
-                log.warning("could not send interaction error reply", exc_info=True)
+            await safe_send(ctx_or_interaction, content=text, ephemeral=True)
             return
         await ctx_or_interaction.send(text, ephemeral=True)
 
@@ -557,7 +708,9 @@ class Fun(commands.Cog):
         ctx = ctx_or_interaction
         guild_marker = getattr(ctx, "guild", object())
         if guild_marker is None:
-            await self._ephemeral_reply(ctx, "These commands only work in servers.")
+            await self._ephemeral_reply(
+                ctx, "These interactions only work in servers."
+            )
             return
 
         target = self._resolve_target(ctx, member)
@@ -565,7 +718,9 @@ class Fun(commands.Cog):
         replied = bool(message and getattr(message, "reference", None))
 
         if member is None and replied and target is None:
-            await self._ephemeral_reply(ctx, "I couldn't find that person in this server.")
+            await self._ephemeral_reply(
+                ctx, "I couldn't find that person in this server."
+            )
             return
 
         if (
@@ -574,14 +729,134 @@ class Fun(commands.Cog):
             and hasattr(guild_marker, "id")
             and target.guild.id != guild_marker.id
         ):
-            await self._ephemeral_reply(ctx, "I couldn't find that person in this server.")
+            await self._ephemeral_reply(
+                ctx, "I couldn't find that person in this server."
+            )
             return
 
         if target is not None and getattr(target, "bot", False):
-            await self._ephemeral_reply(ctx, "You can't do that to a bot!")
+            await self._ephemeral_reply(
+                ctx,
+                f"You can't {action} a bot! Try a fellow adventurer.",
+            )
             return
 
         await self._execute_action(ctx, action, target)
+
+    @commands.hybrid_command(
+        name="friendship",
+        description="Show Friendship XP and interaction statistics",
+        help="Show your Friendship XP, level and most-used interactions.",
+        extras={
+            "help_category": "Minecraft",
+            "usage_prefix": "<prefix>friendship [member]",
+            "usage_slash": "/friendship [member]",
+            "example_prefix": ",friendship @member",
+            "example_slash": "/friendship member:@member",
+            "cooldown": "No command cooldown; XP awards share a "
+            f"{XP_COOLDOWN_SECONDS}s cooldown",
+            "permissions": "Send Messages; Embed Links (bot)",
+        },
+    )
+    @commands.guild_only()
+    @app_commands.describe(member="Member to inspect (defaults to you)")
+    async def friendship(
+        self,
+        ctx: commands.Context,
+        member: discord.Member | None = None,
+    ):
+        target = member or ctx.author
+        service = getattr(self.bot, "interaction_xp", None)
+        if service is None:
+            await ctx.send(
+                embed=error_embed(
+                    "Friendship unavailable",
+                    "Friendship XP is not available right now.",
+                ),
+                ephemeral=True,
+            )
+            return
+
+        try:
+            stats = await service.stats(ctx.guild.id, target.id)
+        except Exception:
+            log.exception(
+                "Friendship stats failed guild=%s user=%s",
+                getattr(ctx.guild, "id", None),
+                getattr(target, "id", None),
+            )
+            await ctx.send(
+                embed=error_embed(
+                    "Friendship unavailable",
+                    "I couldn't load that Friendship record. Please try again.",
+                ),
+                ephemeral=True,
+            )
+            return
+
+        if stats is None:
+            await ctx.send(
+                embed=info_embed(
+                    f"💚 Friendship • {_display_name(target)}",
+                    f"{target.mention} has no recorded interactions yet.\n"
+                    "Try `/hug`, `/mine`, `/craft`, or `/friendship` after your "
+                    "first adventure!",
+                ),
+                ephemeral=True,
+            )
+            return
+
+        embed = info_embed(
+            f"💚 Friendship • {_display_name(target)}",
+            f"{target.mention} has **{stats.total_xp:,} Friendship XP**.",
+        )
+        embed.add_field(
+            name="Level",
+            value=(
+                f"**{stats.level}** • "
+                f"{FriendshipXP.level_title(stats.level)}"
+            ),
+            inline=True,
+        )
+        embed.add_field(
+            name="Progress",
+            value=f"{stats.level_xp}/{stats.next_level_xp} XP",
+            inline=True,
+        )
+        embed.add_field(
+            name="Interactions",
+            value=f"{stats.interactions:,}",
+            inline=True,
+        )
+        embed.add_field(
+            name="Reciprocations",
+            value=f"{stats.reciprocations:,}",
+            inline=True,
+        )
+        embed.add_field(
+            name="XP Cooldown",
+            value=(
+                "Ready now"
+                if stats.cooldown_remaining <= 0
+                else f"Ready in {math.ceil(stats.cooldown_remaining)}s"
+            ),
+            inline=True,
+        )
+        top_actions = service.top_actions(stats.action_counts)
+        embed.add_field(
+            name="Most-used interactions",
+            value=(
+                "\n".join(
+                    f"{action_emoji(name)} **{name}** — {count:,}"
+                    for name, count in top_actions
+                )
+                if top_actions
+                else "No interactions recorded yet."
+            ),
+            inline=False,
+        )
+        embed.set_footer(text="Junior Atlas • Friendship XP")
+        await ctx.send(embed=embed, ephemeral=True)
 
     @commands.hybrid_command(name="fuck", description="NSFW channels only - the other person must accept")
     @commands.guild_only()
@@ -602,7 +877,7 @@ class Fun(commands.Cog):
         embed = info_embed(
             "🔞 Fuck",
             f"{ctx.author.mention} wants to fuck {target.mention}.\n"
-            f"{target.mention}, do you accept?"
+            f"{target.mention}, do you accept?",
         )
         embed.set_footer(text="Junior Atlas • Fun & community")
         view.message = await ctx.send(
@@ -622,11 +897,10 @@ class Fun(commands.Cog):
             raise error
 
 
-# The most frequently used actions keep their dedicated top-level slash command.
-# Discord limits an application to 100 top-level commands and this bot already
-# uses most of that budget, so every other action is reachable through the
-# single ``/action`` command below instead of silently failing to register.
-PRIMARY_SLASH_ACTIONS = ("hug", "pat", "poke", "bonk", "slap", "cuddle", "wave", "highfive")
+# The Minecraft catalogue keeps dedicated top-level slash commands.  Legacy
+# actions remain reachable through the single ``/action`` selector so the
+# application stays below Discord's 100-root-command limit.
+PRIMARY_SLASH_ACTIONS = ACTION_ORDER
 SECONDARY_SLASH_ACTIONS = tuple(
     action for action in SAFE_ACTIONS if action != "fuck"
 )
@@ -639,6 +913,9 @@ ACTION_CHOICE_LIMIT = 25
 
 def _action_description(action: str) -> str:
     """Return a short human-readable description for an action."""
+    spec = get_action(action)
+    if spec is not None:
+        return spec.description
     _key, _emoji, initial_verb = SAFE_ACTIONS[action][:3]
     return f"{initial_verb} someone"
 
@@ -702,6 +979,9 @@ def make_action_slash_callback(cog, action):
         await cog._handle_cmd(interaction, action, member)
 
     slash_callback.__name__ = action
+    slash_callback = discord.app_commands.describe(
+        member="Member to target (defaults to you)"
+    )(slash_callback)
     slash_callback = discord.app_commands.guild_only()(slash_callback)
     return slash_callback
 
@@ -736,21 +1016,32 @@ async def setup(bot):
     await bot.add_cog(Fun(bot))
     cog = bot.get_cog("Fun")
     for action_name in PRIMARY_SLASH_ACTIONS:
+        spec = get_action(action_name)
         slash_callback = make_action_slash_callback(cog, action_name)
         slash_command = discord.app_commands.Command(
             name=action_name,
-            description=f"Playfully {action_name} someone",
+            description=spec.description if spec else f"Playfully {action_name} someone",
             callback=slash_callback,
+            extras=action_extras(spec) if spec else None,
         )
         bot.tree.add_command(slash_command)
 
-    # One extra command exposes every remaining social action without
+    # One extra command exposes every remaining legacy action without
     # exceeding Discord's per-application command limit.
     action_callback = make_action_selector_callback(cog)
     bot.tree.add_command(
         discord.app_commands.Command(
             name="action",
-            description="Play a social action on someone",
+            description="Choose any social, Minecraft, or playful interaction",
             callback=action_callback,
+            extras={
+                "help_category": "Fun",
+                "usage_prefix": "<prefix>action <action> [member]",
+                "usage_slash": "/action <action> [member]",
+                "example_prefix": ",action mine @member",
+                "example_slash": "/action action:mine member:@member",
+                "cooldown": f"{XP_COOLDOWN_SECONDS}s Friendship XP cooldown",
+                "permissions": "Send Messages; Embed Links (bot)",
+            },
         )
     )

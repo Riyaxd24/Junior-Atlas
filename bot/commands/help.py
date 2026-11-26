@@ -19,6 +19,10 @@ def _clean(value: str, limit: int = 90) -> str:
 
 
 def _category(command: commands.Command) -> str:
+    extras = getattr(command, "extras", None) or {}
+    help_category = extras.get("help_category")
+    if help_category:
+        return str(help_category)
     cog = getattr(command, "cog", None)
     name = getattr(cog, "qualified_name", None) or getattr(cog, "__cog_name__", None)
     if name:
@@ -63,6 +67,10 @@ def _slash_inventory(bot: commands.Bot) -> list[tuple[str, str, str]]:
 
 
 def _category_of_slash(command) -> str:
+    extras = getattr(command, "extras", None) or {}
+    help_category = extras.get("help_category")
+    if help_category:
+        return str(help_category)
     root = getattr(command, "qualified_name", getattr(command, "name", "Slash"))
     root = str(root).split(" ", 1)[0]
     return root.replace("-", " ").title()
@@ -85,6 +93,9 @@ def _permission_summary(bot: commands.Bot | None, syntax: str) -> str:
     """Return a human-readable permission hint for a help entry."""
     if bot is None:
         return "No special permissions advertised."
+    extras = _command_extras(bot, syntax)
+    if extras.get("permissions"):
+        return str(extras["permissions"])
     if syntax.startswith("/"):
         command = _find_slash(bot, syntax)
         if command is None:
@@ -126,6 +137,18 @@ def _find_slash(bot: commands.Bot, syntax: str):
     return command
 
 
+def _command_extras(bot: commands.Bot | None, syntax: str) -> dict:
+    """Return help metadata registered on a prefix or slash command."""
+    if bot is None:
+        return {}
+    command = (
+        _find_slash(bot, syntax)
+        if syntax.startswith("/")
+        else _find_prefix(bot, syntax)
+    )
+    return dict(getattr(command, "extras", None) or {})
+
+
 class HelpSearchModal(discord.ui.Modal, title="Search commands"):
     query: discord.ui.TextInput = discord.ui.TextInput(
         label="Command or category",
@@ -134,7 +157,7 @@ class HelpSearchModal(discord.ui.Modal, title="Search commands"):
         required=False,
     )
 
-    def __init__(self, view: "HelpPager"):
+    def __init__(self, view: HelpPager):
         super().__init__()
         self.view_ref = view
 
@@ -322,6 +345,11 @@ class HelpPager(discord.ui.View):
         if picked not in visible:
             picked = next(iter(visible))
         category, description = visible[picked]
+        extras = _command_extras(self.bot, picked)
+        is_slash = picked.startswith("/")
+        usage = extras.get("usage_slash" if is_slash else "usage_prefix")
+        example = extras.get("example_slash" if is_slash else "example_prefix")
+        cooldown = extras.get("cooldown")
         embed = discord.Embed(
             title=picked,
             description=_clean(description, 2000),
@@ -331,9 +359,25 @@ class HelpPager(discord.ui.View):
         embed.add_field(name="Permissions", value=_permission_summary(self.bot, picked), inline=False)
         embed.add_field(
             name="Usage",
-            value=f"`{picked}` — mention a member or reply to their message where supported.",
+            value=(
+                f"`{_clean(usage, 240)}`"
+                if usage
+                else f"`{picked}` — mention a member or reply to their message where supported."
+            ),
             inline=False,
         )
+        if example:
+            embed.add_field(
+                name="Example",
+                value=f"`{_clean(example, 240)}`",
+                inline=False,
+            )
+        if cooldown:
+            embed.add_field(
+                name="Cooldown",
+                value=_clean(str(cooldown), 240),
+                inline=False,
+            )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     async def on_timeout(self) -> None:

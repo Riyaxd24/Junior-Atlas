@@ -7,6 +7,38 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from bot.models import AutoModLog, AutoModMessageEvent, AutoModRule
 
 
+def merge_rule_config(
+    existing,
+    *,
+    threshold,
+    action,
+    duration_seconds,
+    exempt_roles=None,
+    exempt_channels=None,
+    custom_data=None,
+) -> dict:
+    """Merge a rule update with its stored configuration.
+
+    ``exempt_roles``/``exempt_channels`` are optional on purpose: commands that
+    only change a threshold or an action must not silently clear an
+    administrator's existing exemptions.  Passing an explicit list (including
+    an empty list) still replaces the stored value.
+    """
+    config = dict(existing or {})
+    config.update(custom_data or {})
+    config["threshold"] = threshold
+    if exempt_roles is not None:
+        config["exempt_roles"] = sorted({int(value) for value in exempt_roles})
+    else:
+        config.setdefault("exempt_roles", [])
+    if exempt_channels is not None:
+        config["exempt_channels"] = sorted({int(value) for value in exempt_channels})
+    else:
+        config.setdefault("exempt_channels", [])
+    config["duration_seconds"] = duration_seconds if action == "timeout" else None
+    return config
+
+
 class AutoModRepository:
     def __init__(self, db):
         self.db = db
@@ -33,31 +65,39 @@ class AutoModRepository:
         exempt_channels=None,
         custom_data=None,
     ):
-        config = dict(custom_data or {})
-        config.update(
-            threshold=threshold,
-            exempt_roles=exempt_roles or [],
-            exempt_channels=exempt_channels or [],
-            duration_seconds=duration_seconds if action == "timeout" else None,
-        )
-        statement = pg_insert(AutoModRule).values(
-            guild_id=guild_id,
-            name=rule_type,
-            kind="filter",
-            pattern="",
-            action=action,
-            enabled=enabled,
-            config=config,
-        )
-        statement = statement.on_conflict_do_update(
-            index_elements=[AutoModRule.guild_id, AutoModRule.name],
-            set_={
-                "action": statement.excluded.action,
-                "enabled": statement.excluded.enabled,
-                "config": statement.excluded.config,
-            },
-        )
         async with self.db.session() as session:
+            existing = await session.scalar(
+                select(AutoModRule).where(
+                    AutoModRule.guild_id == guild_id,
+                    AutoModRule.name == rule_type,
+                )
+            )
+            config = merge_rule_config(
+                dict(existing.config or {}) if existing is not None else {},
+                threshold=threshold,
+                action=action,
+                duration_seconds=duration_seconds,
+                exempt_roles=exempt_roles,
+                exempt_channels=exempt_channels,
+                custom_data=custom_data,
+            )
+            statement = pg_insert(AutoModRule).values(
+                guild_id=guild_id,
+                name=rule_type,
+                kind="filter",
+                pattern="",
+                action=action,
+                enabled=enabled,
+                config=config,
+            )
+            statement = statement.on_conflict_do_update(
+                index_elements=[AutoModRule.guild_id, AutoModRule.name],
+                set_={
+                    "action": statement.excluded.action,
+                    "enabled": statement.excluded.enabled,
+                    "config": statement.excluded.config,
+                },
+            )
             await session.execute(statement)
             await session.commit()
 
