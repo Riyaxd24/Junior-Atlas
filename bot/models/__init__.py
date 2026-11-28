@@ -24,6 +24,19 @@ from .games import GameSession, GameStats
 from .interactions import InteractionXP
 from .logging import LogPrivacySetting, LogRecord, LogSetting
 from .roles import RoleMenu, RoleMenuItem, TempRole, VerificationSetting
+from .rpg import (
+    RPGAchievement,
+    RPGItem,
+    RPGLeaderboard,
+    RPGMob,
+    RPGPet,
+    RPGQuest,
+    RPGQuestProgress,
+    RPGStats,
+    RPGUserAchievement,
+    RPGBattle,
+    RPGHuntCharm,
+)
 from .schema import (
     Base,
     CustomCommand,
@@ -84,6 +97,17 @@ __all__ = [
     "Reputation",
     "RoleMenu",
     "RoleMenuItem",
+    "RPGAchievement",
+    "RPGBattle",
+    "RPGItem",
+    "RPGLeaderboard",
+    "RPGMob",
+    "RPGPet",
+    "RPGQuest",
+    "RPGQuestProgress",
+    "RPGStats",
+    "RPGUserAchievement",
+    "RPGHuntCharm",
     "ScheduledAction",
     "SecurityEvent",
     "ShopItem",

@@ -107,23 +107,23 @@ class TestActionChoices:
 
     def test_action_choices_returns_valid_structure(self):
         """Verify action choices return proper Discord Choice objects."""
-        from bot.services.minecraft_actions import action_choices
+        from bot.commands.fun import action_choices, SECONDARY_SLASH_ACTIONS
         choices = action_choices("")
         assert len(choices) > 0
         for choice in choices:
             assert hasattr(choice, "name")
             assert hasattr(choice, "value")
-            assert choice.value in MINECRAFT_ACTIONS
+            assert choice.value in SECONDARY_SLASH_ACTIONS
 
     def test_action_choices_respects_limit(self):
         """Verify action choices are capped at Discord's limit."""
-        from bot.services.minecraft_actions import action_choices
+        from bot.commands.fun import action_choices
         choices = action_choices("", limit=20)
         assert len(choices) <= 25  # Discord's 25-choice limit
 
     def test_action_choices_filters_by_query(self):
         """Verify action choices filter correctly by query."""
-        from bot.services.minecraft_actions import action_choices
+        from bot.commands.fun import action_choices
         # Empty query returns all
         all_choices = action_choices("")
         assert len(all_choices) > 0

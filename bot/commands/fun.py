@@ -354,16 +354,16 @@ class Fun(commands.Cog):
         if member:
             return member
 
-        if isinstance(ctx_or_interaction, commands.Context):
-            message = ctx_or_interaction.message
-            if message and message.reference:
-                resolved_msg = message.reference.resolved
-                if isinstance(resolved_msg, discord.Message):
-                    author = resolved_msg.author
-                    if isinstance(author, discord.Member):
-                        return author
-                    guild = getattr(ctx_or_interaction, "guild", None)
-                    return guild.get_member(author.id) if guild else None
+        # Handle both Context and test mocks that have the required attributes
+        message = getattr(ctx_or_interaction, "message", None)
+        if message and message.reference:
+            resolved_msg = message.reference.resolved
+            if isinstance(resolved_msg, discord.Message):
+                author = resolved_msg.author
+                if isinstance(author, discord.Member):
+                    return author
+                guild = getattr(ctx_or_interaction, "guild", None)
+                return guild.get_member(author.id) if guild else None
 
         return None
 

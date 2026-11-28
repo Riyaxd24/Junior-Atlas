@@ -32,6 +32,7 @@ from bot.services.levels import LevelService
 from bot.services.music import MusicService
 from bot.services.platform import PlatformService
 from bot.services.reactions import ReactionGifService
+from bot.services.rpg import RPGService
 from bot.services.security import (
     AntiNukeService,
     merge_security_updates,
@@ -103,7 +104,7 @@ async def resolve_message_prefixes(bot, message) -> list[str]:
     return [configured if isinstance(configured, str) else ","]
 
 
-EXTENSIONS=('bot.commands.greeting','bot.commands.greeting_prefix','bot.commands.rules','bot.commands.moderation','bot.commands.logging','bot.commands.automod','bot.commands.roles','bot.commands.fun','bot.commands.utility','bot.commands.invites','bot.commands.music','bot.commands.admin','bot.commands.community','bot.commands.custom','bot.commands.tickets','bot.commands.platform','bot.commands.control','bot.commands.engagement','bot.commands.games','bot.commands.security','bot.commands.text','bot.commands.help','bot.commands.prefix','bot.commands.extreme','bot.commands.levels')
+EXTENSIONS=('bot.commands.greeting','bot.commands.greeting_prefix','bot.commands.rules','bot.commands.moderation','bot.commands.logging','bot.commands.automod','bot.commands.roles','bot.commands.fun','bot.commands.utility','bot.commands.invites','bot.commands.music','bot.commands.admin','bot.commands.community','bot.commands.custom','bot.commands.tickets','bot.commands.platform','bot.commands.control','bot.commands.engagement','bot.commands.games','bot.commands.security','bot.commands.text','bot.commands.help','bot.commands.prefix','bot.commands.extreme','bot.commands.levels','bot.commands.rpg')
 class Bot(commands.AutoShardedBot):
     @staticmethod
     async def _command_prefix(bot, message):
@@ -149,7 +150,7 @@ class Bot(commands.AutoShardedBot):
         if settings.dashboard_enabled:
             from bot.web.api import DashboardAPI
             self.dashboard = DashboardAPI(self, settings.dashboard_host, settings.dashboard_port)
-        self.automod=AutoModService(self.cache, settings.automod_heat_decay, settings.automod_heat_ttl); self.automod_filters=FilterAutoModService(self.db,self.cache); self.custom_commands=CustomCommandService(self.db,self.cache); self.levels=LevelService(self.db); self.interaction_xp=InteractionXPService(self.db); self.tickets=TicketService(); self.platform=PlatformService(self.db); self.extreme=ExtremeService(self.db); self.v16=V16Runtime(self);                 self.antiraid=AntiRaid(self.cache); self.anti_nuke=AntiNukeService(); self.achievements=AchievementService(self.db); self.reactions=ReactionGifService(); self.uwuify=UwuifyService(self.cache); self.invites=InviteTracker(self.db,self.cache,settings.invite_join_queue_size,settings.invite_stat_flush_interval,bot=self)
+        self.automod=AutoModService(self.cache, settings.automod_heat_decay, settings.automod_heat_ttl); self.automod_filters=FilterAutoModService(self.db,self.cache); self.custom_commands=CustomCommandService(self.db,self.cache); self.levels=LevelService(self.db); self.interaction_xp=InteractionXPService(self.db); self.tickets=TicketService(); self.platform=PlatformService(self.db); self.extreme=ExtremeService(self.db); self.v16=V16Runtime(self); self.rpg=RPGService(self.db); self.antiraid=AntiRaid(self.cache); self.anti_nuke=AntiNukeService(); self.achievements=AchievementService(self.db); self.reactions=ReactionGifService(); self.uwuify=UwuifyService(self.cache); self.invites=InviteTracker(self.db,self.cache,settings.invite_join_queue_size,settings.invite_stat_flush_interval,bot=self)
         self.gateway_queue=GatewayEventQueue(settings.gateway_queue_size, settings.gateway_critical_queue_size); self.gateway_workers=GatewayWorkerPool(self,self.gateway_queue,settings.gateway_workers,settings.gateway_guild_concurrency,settings.gateway_max_event_age,settings.gateway_dlq_maxsize)
         self.shard_leases=ShardLeaseManager(self.cache, settings.instance_id, settings.shard_lease_ttl_ms); self.shard_leases.bind_shutdown(self.close); self.db.set_fence_guard(self.shard_leases.validate_fence)
         self._xp_cooldown={}; self._xp_cap=200000; self.health_runner=None
